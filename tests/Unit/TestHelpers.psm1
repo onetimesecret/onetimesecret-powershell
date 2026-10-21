@@ -149,7 +149,9 @@ class FakeWebResponse : System.Net.WebResponse {
         shape: a status code, a WebHeaderCollection and a body behind
         GetResponseStream(). HttpWebResponse itself cannot be constructed.
     #>
-    [System.Net.HttpStatusCode] $StatusCode
+    # An [int], not [System.Net.HttpStatusCode]: .NET Framework's enum has no
+    # member for 429 and Windows PowerShell refuses to convert unnamed values.
+    [int] $StatusCode
     # Hides the base property, whose getter throws NotImplementedException.
     # Windows PowerShell 5.1 does not dispatch a get_Headers() method as an
     # override, so a hiding property is the form that works on both editions.
@@ -157,7 +159,7 @@ class FakeWebResponse : System.Net.WebResponse {
     [byte[]] $Payload
 
     FakeWebResponse([int] $status, [hashtable] $headers, [string] $body) {
-        $this.StatusCode = [System.Net.HttpStatusCode] $status
+        $this.StatusCode = $status
         $this.Headers = New-Object -TypeName System.Net.WebHeaderCollection
         foreach ($key in $headers.Keys) { $this.Headers.Add($key, [string] $headers[$key]) }
         $this.Payload = [System.Text.Encoding]::UTF8.GetBytes($body)
