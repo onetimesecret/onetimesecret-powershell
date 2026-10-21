@@ -12,7 +12,7 @@ and the one-time setup a maintainer needs before the first release.
   `Get-OtsReceipt`), following the `Verb-PrefixNoun` convention that keeps
   cmdlets from colliding with other modules.
 - **`onetimesecret-powershell`** is the repository name, matching the rest of
-  the SDK family (`onetime-ruby`, …). Repository and package names do not
+  the SDK family (`onetimesecret-ruby`, …). Repository and package names do not
   need to match.
 
 ## One-time setup

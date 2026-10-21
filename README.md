@@ -200,6 +200,7 @@ src/OnetimeSecret/        the module (loaded directly during development)
   Private/                helpers: HTTP, errors, converters, connection
   en-US/                  about_OnetimeSecret help topic
 tests/                    Pester 5 (Module quality gates, Unit, Integration)
+examples/                 small end-to-end scripts
 docs/                     releasing.md and generated cmdlet reference
 OnetimeSecret.build.ps1   Invoke-Build tasks; build.ps1 bootstraps and runs them
 ```
@@ -213,7 +214,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and
 ## Related
 
 - API documentation: <https://api.onetimesecret.com>
-- Ruby SDK: [onetime-ruby](https://github.com/onetimesecret/onetime-ruby)
+- Ruby SDK: [onetimesecret-ruby](https://github.com/onetimesecret/onetimesecret-ruby)
 - Onetime Secret: <https://onetimesecret.com> · [source](https://github.com/onetimesecret/onetimesecret)
 
 ## License
