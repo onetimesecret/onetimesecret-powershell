@@ -3,7 +3,7 @@
 
     Tasks:
       Clean     remove output/
-      Analyze   PSScriptAnalyzer over src/, tests/ and the build scripts
+      Analyze   PSScriptAnalyzer over src/, tests/, examples/ and the build scripts
       Test      Pester unit tests (set OTS_INTEGRATION=1 for the live tests too)
       Build     stage a publishable module in output/OnetimeSecret/<version>/
       Docs      regenerate docs/cmdlets/*.md from comment-based help (platyPS)
@@ -60,6 +60,7 @@ task Analyze {
     $targets = @(
         (Join-Path $BuildRoot 'src')
         (Join-Path $BuildRoot 'tests')
+        (Join-Path $BuildRoot 'examples')
         (Join-Path $BuildRoot 'build.ps1')
         (Join-Path $BuildRoot 'OnetimeSecret.build.ps1')
     )

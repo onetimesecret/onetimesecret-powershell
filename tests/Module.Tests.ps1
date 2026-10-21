@@ -14,6 +14,7 @@ BeforeDiscovery {
     $script:SourceFiles = @(
         Get-ChildItem -Path $ModulePath -Recurse -Include '*.ps1', '*.psm1', '*.psd1'
         Get-ChildItem -Path (Join-Path $RepoRoot 'tests') -Recurse -Filter '*.ps1'
+        Get-ChildItem -Path (Join-Path $RepoRoot 'examples') -Filter '*.ps1'
         Get-ChildItem -Path $RepoRoot -Filter '*.ps1'
     ) | ForEach-Object { @{ Path = $_.FullName; Name = $_.Name } }
 }
@@ -117,6 +118,7 @@ Describe 'PSScriptAnalyzer' {
         $targets = @(
             (Join-Path $RepoRoot 'src')
             (Join-Path $RepoRoot 'tests')
+            (Join-Path $RepoRoot 'examples')
             (Join-Path $RepoRoot 'OnetimeSecret.build.ps1')
             (Join-Path $RepoRoot 'build.ps1')
         )
