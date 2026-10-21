@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in the module does not behave as documented
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Module and PowerShell version
+      description: Output of `(Get-Module OnetimeSecret).Version` and `$PSVersionTable.PSVersion`
+      placeholder: "0.1.0 on 7.4.6 (macOS)"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The cmdlet invocation, with secrets and tokens removed. `-Verbose` output is helpful; it never includes bodies or headers.
+      render: powershell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include `$_.FullyQualifiedErrorId` and `$_.Exception.Data['RequestId']` from any error; the request id lets us find the server-side log line.
+    validations:
+      required: true

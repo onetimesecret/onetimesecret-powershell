@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Onetime Secret support
+    url: https://onetimesecret.com/feedback
+    about: Questions about your account or the service itself, rather than this module.
+  - name: API documentation
+    url: https://api.onetimesecret.com
+    about: Reference for the endpoints this module wraps.

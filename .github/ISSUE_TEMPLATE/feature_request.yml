@@ -1,0 +1,21 @@
+name: Feature request
+description: A cmdlet, parameter or behaviour you would like to see
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would the PowerShell look like?
+      description: A sketch of the cmdlet call you wish worked.
+      render: powershell
+  - type: input
+    id: api
+    attributes:
+      label: Related API endpoint
+      description: If this maps to something at https://api.onetimesecret.com, link it.
