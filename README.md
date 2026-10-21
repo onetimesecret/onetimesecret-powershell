@@ -100,19 +100,27 @@ New-OtsSecret -Secret 'for america' -Connection $us
 
 ## Cmdlets
 
-| Cmdlet                  | Purpose                                                       |
-| ----------------------- | ------------------------------------------------------------- |
-| `Connect-OtsAccount`    | Set the server and credential; `-Anonymous` for guest use.    |
-| `Disconnect-OtsAccount` | Forget the default connection.                                |
-| `Get-OtsConnection`     | Show the connection in use.                                   |
-| `New-OtsSecret`         | Conceal a value, or `-Generate` a random one.                 |
-| `Get-OtsSecret`         | Read a secret's metadata without revealing it.                |
-| `Get-OtsSecretStatus`   | Cheap existence/state check; several identifiers per request. |
-| `Receive-OtsSecret`     | Reveal a secret. Consumes it.                                 |
-| `Get-OtsReceipt`        | One receipt by id, or the last 30 days of them.               |
-| `Set-OtsReceipt`        | Set the private memo on a receipt.                            |
-| `Remove-OtsSecret`      | Burn a secret via its receipt.                                |
-| `Get-OtsStatus`         | Service health for a server.                                  |
+| Cmdlet                   | Purpose                                                       |
+| ------------------------ | ------------------------------------------------------------- |
+| `Connect-OtsAccount`     | Set the server and credential; `-Anonymous` for guest use.    |
+| `Disconnect-OtsAccount`  | Forget the default connection.                                |
+| `Get-OtsConnection`      | Show the connection in use.                                   |
+| `New-OtsSecret`          | Conceal a value, or `-Generate` a random one.                 |
+| `Get-OtsSecret`          | Read a secret's metadata without revealing it.                |
+| `Get-OtsSecretStatus`    | Cheap existence/state check; several identifiers per request. |
+| `Receive-OtsSecret`      | Reveal a secret. Consumes it.                                 |
+| `Get-OtsReceipt`         | One receipt by id, or the last 30 days of them.               |
+| `Set-OtsReceipt`         | Set the private memo on a receipt.                            |
+| `Remove-OtsSecret`       | Burn a secret via its receipt.                                |
+| `Get-OtsStatus`          | Service health for a server.                                  |
+| `Get-OtsVersion`         | Server build version (authenticated; see below).              |
+| `Get-OtsSupportedLocale` | Locales a server can serve.                                   |
+
+`Get-OtsVersion` needs a credential: the server withholds the build version
+from anonymous callers (it fingerprints an install for CVE matching), even
+though the OpenAPI document lists the endpoint without a security
+requirement. Anonymously it fails with an `AuthenticationError` (HTTP 401).
+`Get-OtsStatus` and `Get-OtsSupportedLocale` are public.
 
 Full reference: `Get-Help New-OtsSecret -Full`, `Get-Help about_OnetimeSecret`,
 or the generated pages under [docs/cmdlets](docs/cmdlets/).

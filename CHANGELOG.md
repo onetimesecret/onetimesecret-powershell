@@ -10,6 +10,9 @@ The release workflow requires a `## [X.Y.Z]` section matching the tag.
 
 ### Added
 
+- `Get-OtsVersion` (server build version; the endpoint requires an
+  authenticated connection) and `Get-OtsSupportedLocale` (locales a server
+  can serve), completing coverage of the v2 API's meta endpoints.
 - `examples/roundtrip.ps1`: conceal, inspect, reveal and confirm the receipt
   state changed, against any server, anonymously or with credentials.
 - The example scripts load the module from the clone and are covered by

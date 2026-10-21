@@ -36,6 +36,21 @@ Describe 'Guest workflow against <_>' -ForEach @($env:ONETIME_BASE_URL) -Skip:(-
         (Get-OtsStatus).IsHealthy | Should -BeTrue
     }
 
+    It 'lists the locales the server supports' {
+        $locales = Get-OtsSupportedLocale
+        @($locales.Locales).Count | Should -BeGreaterOrEqual 1
+        $locales.DefaultLocale | Should -Not -BeNullOrEmpty
+        @($locales.Locales) | Should -Contain $locales.DefaultLocale
+    }
+
+    It 'withholds the build version from anonymous callers' {
+        $failure = $null
+        try { Get-OtsVersion -ErrorAction Stop } catch { $failure = $_ }
+        $failure | Should -Not -BeNullOrEmpty
+        $failure.Exception.Data['StatusCode'] | Should -Be 401
+        $failure.CategoryInfo.Category | Should -Be 'AuthenticationError'
+    }
+
     It 'conceals, inspects, reveals and then cannot reveal again' {
         $value = 'onetimesecret-powershell integration ' + [guid]::NewGuid().ToString('N')
         $receipt = New-OtsSecret -Secret $value -Ttl (New-TimeSpan -Minutes 5)

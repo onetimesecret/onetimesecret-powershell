@@ -28,6 +28,8 @@
         'Get-OtsReceipt'
         'Set-OtsReceipt'
         'Get-OtsStatus'
+        'Get-OtsVersion'
+        'Get-OtsSupportedLocale'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

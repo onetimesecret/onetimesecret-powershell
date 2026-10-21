@@ -17,5 +17,7 @@ Generated from the module's comment-based help by `./build.ps1 -Task Docs`
 | [Remove-OtsSecret](Remove-OtsSecret.md) | Burns a secret before anyone reads it. |
 | [Get-OtsSecretStatus](Get-OtsSecretStatus.md) | Checks whether secrets still exist and what state they are in. |
 | [Get-OtsStatus](Get-OtsStatus.md) | Reports whether the Onetime Secret service is up. |
+| [Get-OtsSupportedLocale](Get-OtsSupportedLocale.md) | Lists the locales a Onetime Secret server can serve. |
+| [Get-OtsVersion](Get-OtsVersion.md) | Reports the version of the Onetime Secret server you are connected to. |
 
 See also `Get-Help about_OnetimeSecret`.
