@@ -92,7 +92,9 @@ Describe 'Public cmdlet <_>' -ForEach $PublicFunctions {
     }
 
     It 'has at least one example' {
-        $Help.Examples.example.Count | Should -BeGreaterOrEqual 1
+        # Wrap in @(): on Windows PowerShell 5.1 a single help example is a
+        # scalar PSObject whose .Count is $null, not 1.
+        @($Help.Examples.example).Count | Should -BeGreaterOrEqual 1
     }
 
     It 'documents every parameter' {
