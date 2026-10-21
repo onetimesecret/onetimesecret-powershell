@@ -23,8 +23,9 @@ param(
     # Repository to publish to. Defaults to PSGallery.
     [string] $Repository = 'PSGallery',
 
-    # Override the module version at build time (used by the release workflow
-    # to inject a prerelease label, e.g. 0.2.0-preview1).
+    # Override the module version at build time (e.g. 0.2.0-preview1) to try
+    # a build without editing the manifest. The release workflow does not use
+    # it; it publishes whatever the manifest says.
     [string] $Version
 )
 
@@ -156,9 +157,16 @@ task Build Clean, {
     Copy-Item -Path (Join-Path $BuildRoot 'CHANGELOG.md') -Destination $stage
 
     # Write the manifest with the resolved version and the real function list.
-    Copy-Item -Path $ManifestPath -Destination $stage
+    # Update-ModuleManifest validates the file first, and that validation
+    # insists ModuleVersion matches the version folder, so when -Version
+    # overrides the manifest the version has to be substituted up front.
+    $stagedManifest = Join-Path $stage "$ModuleName.psd1"
+    $manifestText = Get-Content -Path $ManifestPath -Raw
+    $manifestText = $manifestText -replace "(?m)^(\s*ModuleVersion\s*=\s*)'[^']*'", ('$1''{0}''' -f $baseVersion)
+    Set-Content -Path $stagedManifest -Value $manifestText -Encoding UTF8 -NoNewline
+
     $manifestParameters = @{
-        Path              = Join-Path $stage "$ModuleName.psd1"
+        Path              = $stagedManifest
         ModuleVersion     = $baseVersion
         FunctionsToExport = $publicNames
     }

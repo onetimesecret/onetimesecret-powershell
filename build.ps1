@@ -14,12 +14,18 @@
 .PARAMETER Bootstrap
     Install missing build dependencies without running a task.
 
+.PARAMETER Version
+    Override the module version for Build, Package and Publish, e.g.
+    0.2.0-preview1. Defaults to the manifest's ModuleVersion and Prerelease.
+
 .EXAMPLE
     ./build.ps1
 .EXAMPLE
     ./build.ps1 -Task Test
 .EXAMPLE
     ./build.ps1 -Task Build, Docs
+.EXAMPLE
+    ./build.ps1 -Task Package -Version 0.2.0-preview1
 #>
 [CmdletBinding()]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', '', Justification = 'Invoke-Build is the documented entry point; the module exposes it as an alias of its script.')]
@@ -28,7 +34,10 @@ param(
     [string[]] $Task = '.',
 
     [Parameter()]
-    [switch] $Bootstrap
+    [switch] $Bootstrap,
+
+    [Parameter()]
+    [string] $Version
 )
 
 $ErrorActionPreference = 'Stop'
@@ -71,4 +80,11 @@ if ($missing) {
 if ($Bootstrap) { return }
 
 Import-Module InvokeBuild -MinimumVersion $requirements.InvokeBuild
-Invoke-Build -Task $Task -File (Join-Path $PSScriptRoot 'OnetimeSecret.build.ps1')
+
+# Build script parameters are exposed by Invoke-Build as dynamic parameters.
+$buildParameters = @{
+    Task = $Task
+    File = Join-Path $PSScriptRoot 'OnetimeSecret.build.ps1'
+}
+if ($PSBoundParameters.ContainsKey('Version')) { $buildParameters['Version'] = $Version }
+Invoke-Build @buildParameters
