@@ -8,6 +8,15 @@ The release workflow requires a `## [X.Y.Z]` section matching the tag.
 
 ## [Unreleased]
 
+### Fixed
+
+- Failed API calls no longer carry the underlying HTTP exception on the
+  error record. On PowerShell 7 that exception holds the full request,
+  `Authorization` header included, and reached `$Error` and anything that
+  serialised the error. HTTP failures are now read from the response
+  (`-SkipHttpErrorCheck`) on 7+ and only the transport error's message is
+  kept.
+
 ## [0.1.0] - 2026-10-20
 
 Initial release.

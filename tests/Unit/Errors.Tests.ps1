@@ -35,6 +35,36 @@ Describe 'API error handling' {
         $failure.Exception.Data['Uri'] | Should -Be 'https://eu.onetimesecret.com/api/v2/guest/secret/missing'
     }
 
+    It 'maps a failure returned as a response (PowerShell 7, -SkipHttpErrorCheck) the same way' {
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            New-FakeHttpResponse -StatusCode 404 -Body @{ error = 'Unknown secret'; error_type = 'RecordNotFound'; request_id = 'req-2' }
+        }
+
+        $failure = $null
+        try { Get-OtsSecret -SecretId missing -ErrorAction Stop } catch { $failure = $_ }
+
+        $failure.FullyQualifiedErrorId | Should -Match '^OnetimeSecret\.Api\.RecordNotFound'
+        $failure.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+        $failure.Exception.Data['StatusCode'] | Should -Be 404
+        $failure.Exception.Data['RequestId'] | Should -Be 'req-2'
+        $failure.Exception.Data['Response'].error | Should -Be 'Unknown secret'
+    }
+
+    It 'does not chain the transport exception, which would carry the request headers' {
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            throw (New-FakeApiErrorRecord -StatusCode 403 -Body @{ error = 'nope' })
+        }
+
+        $failure = $null
+        try { Get-OtsSecret -SecretId abc -ErrorAction Stop } catch { $failure = $_ }
+
+        # The catch path keeps the transport error's message in a plain
+        # System.Exception; the thrown object (with its Response) is dropped.
+        $failure.Exception.InnerException.GetType() | Should -Be ([System.Exception])
+        $failure.Exception.InnerException.PSObject.Properties['Response'] | Should -BeNullOrEmpty
+        $failure.Exception.InnerException.Message | Should -Match '403'
+    }
+
     It 'maps a 401 to AuthenticationError with a recommended action' {
         Mock -ModuleName OnetimeSecret Invoke-WebRequest {
             throw (New-FakeApiErrorRecord -StatusCode 401 -Body @{ error = 'Authentication required'; error_type = 'Unauthorized' })
@@ -96,6 +126,26 @@ Describe 'API error handling' {
         $failure.CategoryInfo.Category | Should -Be 'ConnectionError'
         $failure.Exception.Data['StatusCode'] | Should -Be 0
         $failure.Exception.Message | Should -Match 'No such host'
+        # Only the transport error's message is kept, never the exception itself.
+        $failure.Exception.InnerException | Should -BeOfType [System.Exception]
+        $failure.Exception.InnerException.Message | Should -Be 'No such host is known'
+        $failure.Exception.InnerException.PSObject.Properties['Response'] | Should -BeNullOrEmpty
+    }
+
+    It 'retries a 429 returned as a response and reads Retry-After from its headers' {
+        Mock -ModuleName OnetimeSecret Start-Sleep { }
+        $script:responseCalls = 0
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            $script:responseCalls++
+            if ($script:responseCalls -eq 1) { return (New-FakeHttpResponse -StatusCode 429 -Body @{ error = 'slow down' } -Headers @{ 'Retry-After' = '9' }) }
+            New-FakeHttpResponse -Body @{ record = (New-FakeSecretRecord) }
+        }
+
+        $secret = Get-OtsSecret -SecretId sec2222222222222222222222
+
+        $secret.SecretId | Should -Be 'sec2222222222222222222222'
+        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 2 -Exactly
+        Should -Invoke -ModuleName OnetimeSecret Start-Sleep -Times 1 -Exactly -ParameterFilter { $Seconds -eq 9 }
     }
 
     It 'retries GETs on 429 and honours Retry-After, then succeeds' {

@@ -26,3 +26,9 @@ Only the latest minor release on the PowerShell Gallery receives fixes.
   anything printed to the console.
 - API tokens live in a `PSCredential` on the connection object. Treat that
   object like the token itself.
+- Error records raised for failed API calls carry the status code, the
+  server's error envelope and the request URL, but not the underlying HTTP
+  exception: on PowerShell 7 that object holds the full request, including
+  the `Authorization` header, and would leak the token into anything that
+  serialises `$Error`. Request URLs do contain secret and receipt
+  identifiers, so treat logged errors as you would the links themselves.

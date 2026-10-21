@@ -6,16 +6,31 @@ param()
 # implementation details.
 
 function New-FakeHttpResponse {
+    <#
+        Shapes a response like Invoke-WebRequest returns it. With a 4xx/5xx
+        -StatusCode it models the PowerShell 7 -SkipHttpErrorCheck path, where
+        HTTP failures come back as a response instead of an exception.
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [object] $Body
+        [AllowNull()]
+        [object] $Body,
+
+        [Parameter()]
+        [int] $StatusCode = 200,
+
+        [Parameter()]
+        [hashtable] $Headers = @{}
     )
 
+    $allHeaders = @{ 'Content-Type' = 'application/json' } + $Headers
+    $content = if ($null -eq $Body) { '' } else { ConvertTo-Json -InputObject $Body -Depth 10 -Compress }
+
     [PSCustomObject] @{
-        StatusCode = 200
-        Content    = ConvertTo-Json -InputObject $Body -Depth 10 -Compress
-        Headers    = @{ 'Content-Type' = 'application/json' }
+        StatusCode = $StatusCode
+        Content    = $content
+        Headers    = $allHeaders
     }
 }
 

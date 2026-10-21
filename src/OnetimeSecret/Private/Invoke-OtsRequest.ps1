@@ -9,6 +9,13 @@ function Invoke-OtsRequest {
         idempotent GETs on 429/502/503/504 with exponential backoff (honouring
         Retry-After), and converts failures into rich ErrorRecords via
         New-OtsErrorRecord.
+
+        On PowerShell 7+ HTTP failures are read from the response
+        (-SkipHttpErrorCheck) rather than caught as exceptions: the exception
+        Invoke-WebRequest would throw carries the whole request, Authorization
+        header included, and PowerShell records it in $Error even when it is
+        caught here. Windows PowerShell 5.1 has no such switch; its
+        WebException exposes only the response, so the catch path is safe there.
     #>
     [CmdletBinding()]
     [OutputType([object])]
@@ -63,37 +70,108 @@ function Invoke-OtsRequest {
         $request['Body'] = [System.Text.Encoding]::UTF8.GetBytes($json)
     }
 
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+        $request['SkipHttpErrorCheck'] = $true
+    }
+
     $attempt = 0
     while ($true) {
+        $failure = $null
+        $cause = $null
         try {
             Write-Verbose ('{0} {1}' -f $Method, $uri)
             $response = Invoke-WebRequest @request
 
-            $content = $response.Content
-            if ($content -is [byte[]]) {
-                $content = [System.Text.Encoding]::UTF8.GetString($content)
+            $statusCode = 0
+            if ($null -ne $response -and $null -ne $response.PSObject.Properties['StatusCode']) {
+                try { $statusCode = [int] $response.StatusCode } catch { $statusCode = 0 }
             }
-            if ([string]::IsNullOrWhiteSpace($content)) {
-                return $null
+
+            if ($statusCode -lt 400) {
+                $content = $response.Content
+                if ($content -is [byte[]]) {
+                    $content = [System.Text.Encoding]::UTF8.GetString($content)
+                }
+                if ([string]::IsNullOrWhiteSpace($content)) {
+                    return $null
+                }
+                return ($content | ConvertFrom-Json)
             }
-            return ($content | ConvertFrom-Json)
+
+            $failure = ConvertFrom-OtsHttpResponse -Response $response -StatusCode $statusCode
         }
         catch {
             $failure = ConvertFrom-OtsHttpError -ErrorRecord $_
-
-            $retryable = ($Method -eq 'GET') -and ($failure.StatusCode -in @(429, 502, 503, 504)) -and ($attempt -lt $MaxRetry)
-
-            if ($retryable) {
-                $attempt++
-                $delay = [math]::Pow(2, $attempt)
-                if ($failure.RetryAfter -gt 0) { $delay = [math]::Max($delay, $failure.RetryAfter) }
-                Write-Verbose ('{0} from {1}; retry {2}/{3} in {4}s' -f $failure.StatusCode, $uri, $attempt, $MaxRetry, $delay)
-                Start-Sleep -Seconds $delay
-                continue
-            }
-
-            $PSCmdlet.ThrowTerminatingError((New-OtsErrorRecord -Failure $failure -Method $Method -Uri $uri -ErrorRecord $_))
+            $cause = $_.Exception.Message
         }
+
+        $retryable = ($Method -eq 'GET') -and ($failure.StatusCode -in @(429, 502, 503, 504)) -and ($attempt -lt $MaxRetry)
+
+        if ($retryable) {
+            $attempt++
+            $delay = [math]::Pow(2, $attempt)
+            if ($failure.RetryAfter -gt 0) { $delay = [math]::Max($delay, $failure.RetryAfter) }
+            Write-Verbose ('{0} from {1}; retry {2}/{3} in {4}s' -f $failure.StatusCode, $uri, $attempt, $MaxRetry, $delay)
+            Start-Sleep -Seconds $delay
+            continue
+        }
+
+        $PSCmdlet.ThrowTerminatingError((New-OtsErrorRecord -Failure $failure -Method $Method -Uri $uri -Cause $cause))
+    }
+}
+
+function ConvertFrom-OtsHttpResponse {
+    <#
+    .SYNOPSIS
+        Builds the failure object for a non-2xx response returned with -SkipHttpErrorCheck.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [object] $Response,
+
+        [Parameter(Mandatory)]
+        [int] $StatusCode
+    )
+
+    $retryAfter = 0
+    try {
+        $headers = $Response.Headers
+        if ($null -ne $headers) {
+            $value = $null
+            if ($headers -is [System.Collections.IDictionary]) {
+                # Hashtable (mocks) and Dictionary<string, IEnumerable<string>>
+                # (PowerShell 7) disagree on Contains/ContainsKey; walk the keys.
+                foreach ($key in $headers.Keys) {
+                    if ($key -eq 'Retry-After') { $value = $headers[$key]; break }
+                }
+            }
+            else {
+                $value = $headers['Retry-After']
+            }
+            $value = [string] (@($value) | Select-Object -First 1)
+            if ($value -match '^\d+$') { $retryAfter = [int] $value }
+        }
+    }
+    catch {
+        Write-Debug ('Retry-After could not be read: {0}' -f $_.Exception.Message)
+    }
+
+    $rawBody = $Response.Content
+    if ($rawBody -is [byte[]]) { $rawBody = [System.Text.Encoding]::UTF8.GetString($rawBody) }
+    $rawBody = [string] $rawBody
+
+    $body = $null
+    if (-not [string]::IsNullOrWhiteSpace($rawBody)) {
+        try { $body = $rawBody | ConvertFrom-Json } catch { $body = $null }
+    }
+
+    return [PSCustomObject] @{
+        StatusCode = $StatusCode
+        Body       = $body
+        RawBody    = $rawBody
+        RetryAfter = $retryAfter
     }
 }
 
@@ -104,8 +182,10 @@ function ConvertFrom-OtsHttpError {
     .DESCRIPTION
         Windows PowerShell throws System.Net.WebException with an HttpWebResponse;
         PowerShell 7 throws HttpResponseException with an HttpResponseMessage and
-        puts the body in ErrorDetails. Connection failures have no response at
-        all. All three end up as the same small object.
+        puts the body in ErrorDetails (only reachable here through mocks, since
+        Invoke-OtsRequest passes -SkipHttpErrorCheck on 7+). Connection
+        failures have no response at all. All three end up as the same small
+        object.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -184,6 +264,12 @@ function New-OtsErrorRecord {
           - FullyQualifiedErrorId  "OnetimeSecret.Api.<error_type>" (or Http<status>)
           - ErrorCategory          mapped from the HTTP status
           - Exception.Data         StatusCode, ErrorType, Field, ErrorId, RequestId, Uri, Method, Response
+
+        The transport exception is deliberately not chained as InnerException:
+        on PowerShell 7 it carries the HttpRequestMessage, Authorization header
+        and body included, and anything that serialises the error (logging,
+        ConvertTo-Json, transcripts) would write the credential out. Only its
+        message survives, as a plain inner exception.
     #>
     [CmdletBinding()]
     [OutputType([System.Management.Automation.ErrorRecord])]
@@ -199,8 +285,11 @@ function New-OtsErrorRecord {
         [Parameter(Mandatory)]
         [string] $Uri,
 
-        [Parameter(Mandatory)]
-        [System.Management.Automation.ErrorRecord] $ErrorRecord
+        # Message of the underlying transport error, when there was one.
+        [Parameter()]
+        [AllowNull()]
+        [AllowEmptyString()]
+        [string] $Cause
     )
 
     $status = [int] $Failure.StatusCode
@@ -218,7 +307,7 @@ function New-OtsErrorRecord {
 
     if ($status -eq 0) {
         $category = [System.Management.Automation.ErrorCategory]::ConnectionError
-        $message = 'Could not reach {0}: {1}' -f $Uri, $ErrorRecord.Exception.Message
+        $message = 'Could not reach {0}: {1}' -f $Uri, $Cause
         $fqid = 'OnetimeSecret.ConnectionError'
         $recommended = 'Check the server URI and your network connection.'
     }
@@ -265,7 +354,12 @@ function New-OtsErrorRecord {
         if ($accountRequired) { $recommended = 'This operation needs an authenticated account. Run Connect-OtsAccount with a credential.' }
     }
 
-    $exception = New-Object -TypeName System.Exception -ArgumentList $message, $ErrorRecord.Exception
+    if ([string]::IsNullOrWhiteSpace($Cause)) {
+        $exception = New-Object -TypeName System.Exception -ArgumentList $message
+    }
+    else {
+        $exception = New-Object -TypeName System.Exception -ArgumentList $message, (New-Object -TypeName System.Exception -ArgumentList $Cause)
+    }
     $exception.Data['StatusCode'] = $status
     $exception.Data['ErrorType']  = $errorType
     $exception.Data['Field']      = $field
