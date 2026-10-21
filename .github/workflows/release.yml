@@ -1,0 +1,120 @@
+name: Release
+
+# Publishes the module to the PowerShell Gallery from v* tags and attaches
+# the packaged module to a GitHub Release. The Gallery authenticates with an
+# API key held in the `powershellgallery.com` GitHub environment (it does not
+# offer OIDC trusted publishing). See docs/releasing.md for the one-time
+# setup and the release checklist.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify tag and run tests
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Verify the tag matches the module manifest
+        id: version
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch '^v(?<base>\d+\.\d+\.\d+)(?:-(?<pre>[0-9A-Za-z]+))?$') {
+            throw "Tag '$tag' is not of the form vX.Y.Z or vX.Y.Z-label (label: alphanumerics only, the Gallery allows no dots or hyphens)."
+          }
+          $tagBase = $Matches['base']
+          $tagPre  = $Matches['pre']
+
+          $data = Import-PowerShellDataFile -Path src/OnetimeSecret/OnetimeSecret.psd1
+          $manifestBase = $data.ModuleVersion
+          $manifestPre  = $data.PrivateData.PSData.Prerelease
+
+          if ($tagBase -ne $manifestBase) {
+            throw "Tag $tag does not match ModuleVersion $manifestBase in src/OnetimeSecret/OnetimeSecret.psd1."
+          }
+          if ([string] $tagPre -ne [string] $manifestPre) {
+            throw "Tag prerelease label '$tagPre' does not match PrivateData.PSData.Prerelease '$manifestPre' in the manifest."
+          }
+
+          $version = if ($tagPre) { "$tagBase-$tagPre" } else { $tagBase }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "prerelease=$([bool] $tagPre)".ToLower() >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing OnetimeSecret $version"
+
+      - name: Verify CHANGELOG has an entry for this version
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $changelog = Get-Content CHANGELOG.md -Raw
+          if ($changelog -notmatch ('(?m)^## \[' + [regex]::Escape($version) + '\]')) {
+            throw "CHANGELOG.md has no '## [$version]' section. Add release notes before tagging."
+          }
+
+      - name: Bootstrap build dependencies
+        shell: pwsh
+        run: ./build.ps1 -Bootstrap
+
+      - name: Analyze and test
+        shell: pwsh
+        run: ./build.ps1 -Task Analyze, Test
+
+  publish:
+    name: Publish to the PowerShell Gallery
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: powershellgallery.com
+      url: https://www.powershellgallery.com/packages/OnetimeSecret/${{ needs.verify.outputs.version }}
+    permissions:
+      contents: write # create the GitHub Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Bootstrap build dependencies
+        shell: pwsh
+        run: ./build.ps1 -Bootstrap
+
+      - name: Build and package
+        shell: pwsh
+        run: ./build.ps1 -Task Package
+
+      - name: Publish
+        shell: pwsh
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: ./build.ps1 -Task Publish
+
+      - name: Extract release notes
+        id: notes
+        shell: pwsh
+        run: |
+          $version = '${{ needs.verify.outputs.version }}'
+          $lines = Get-Content CHANGELOG.md
+          $start = ($lines | Select-String -Pattern ('^## \[' + [regex]::Escape($version) + '\]') | Select-Object -First 1).LineNumber
+          $rest = $lines[$start..($lines.Count - 1)]
+          $end = ($rest | Select-String -Pattern '^## \[' | Select-Object -First 1).LineNumber
+          $notes = if ($end -gt 1) { $rest[0..($end - 2)] } elseif ($end -eq 1) { @() } else { $rest }
+          $body = ($notes -join "`n").Trim()
+          $body += "`n`nInstall: ``Install-Module OnetimeSecret -RequiredVersion $version``"
+          Set-Content -Path release-notes.md -Value $body
+          Get-Content release-notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: OnetimeSecret ${{ needs.verify.outputs.version }}
+          body_path: release-notes.md
+          prerelease: ${{ needs.verify.outputs.prerelease == 'true' }}
+          files: output/*.zip

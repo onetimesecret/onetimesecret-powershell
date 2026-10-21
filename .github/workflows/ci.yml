@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Daily at 06:00 UTC, so dependency drift (Pester, PSScriptAnalyzer,
+    # PowerShell itself) surfaces without waiting for a commit.
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: PowerShell 7 on Ubuntu
+            os: ubuntu-latest
+            shell: pwsh
+          - name: PowerShell 7 on macOS
+            os: macos-latest
+            shell: pwsh
+          - name: PowerShell 7 on Windows
+            os: windows-latest
+            shell: pwsh
+          - name: Windows PowerShell 5.1
+            os: windows-latest
+            shell: powershell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Cache PowerShell modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/powershell/Modules
+            ~/Documents/PowerShell/Modules
+            ~/Documents/WindowsPowerShell/Modules
+          key: psmodules-${{ runner.os }}-${{ matrix.shell }}-${{ hashFiles('build.ps1') }}
+
+      - name: Bootstrap build dependencies
+        shell: ${{ matrix.shell }}
+        run: ./build.ps1 -Bootstrap
+
+      - name: Analyze and test
+        shell: ${{ matrix.shell }}
+        run: ./build.ps1 -Task Analyze, Test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.shell }}
+          path: |
+            output/testResults.xml
+            output/coverage.xml
+
+  integration:
+    # Live guest-endpoint tests against a real region. They create and then
+    # burn or reveal every secret they touch, so they are safe to run on a
+    # schedule. Set the ONETIME_BASE_URL repository variable to enable them.
+    name: Integration (${{ matrix.name }})
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: PowerShell 7 on Ubuntu
+            os: ubuntu-latest
+            shell: pwsh
+          # Windows PowerShell 5.1 uses a different HTTP stack (WebException,
+          # HttpWebResponse, .NET Framework TLS defaults); the mocked unit
+          # tests cannot see those differences, so exercise it for real.
+          - name: Windows PowerShell 5.1
+            os: windows-latest
+            shell: powershell
+    env:
+      OTS_INTEGRATION: ${{ vars.ONETIME_BASE_URL != '' && '1' || '0' }}
+      ONETIME_BASE_URL: ${{ vars.ONETIME_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Bootstrap build dependencies
+        shell: ${{ matrix.shell }}
+        run: ./build.ps1 -Bootstrap
+
+      - name: Run integration tests
+        shell: ${{ matrix.shell }}
+        run: |
+          Import-Module Pester -MinimumVersion 5.5.0 -MaximumVersion 5.99.99
+          $configuration = New-PesterConfiguration
+          $configuration.Run.Path = 'tests/Integration'
+          $configuration.Run.Exit = $true
+          $configuration.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $configuration
+
+  build:
+    name: Build module
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Bootstrap build dependencies
+        shell: pwsh
+        run: ./build.ps1 -Bootstrap
+
+      - name: Build and package
+        shell: pwsh
+        run: ./build.ps1 -Task Package
+
+      - name: Smoke test the built module
+        shell: pwsh
+        run: |
+          $manifest = Get-ChildItem output/OnetimeSecret -Recurse -Filter OnetimeSecret.psd1 | Select-Object -First 1
+          Import-Module $manifest.FullName -Force
+          Get-Command -Module OnetimeSecret | Format-Table Name, Version
+          Connect-OtsAccount -ServerUri https://eu.onetimesecret.com -Anonymous
+          (Get-OtsConnection).ServerUri
+
+      - name: Upload module package
+        uses: actions/upload-artifact@v4
+        with:
+          name: OnetimeSecret-module
+          path: output/*.zip
