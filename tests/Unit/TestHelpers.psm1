@@ -150,17 +150,18 @@ class FakeWebResponse : System.Net.WebResponse {
         GetResponseStream(). HttpWebResponse itself cannot be constructed.
     #>
     [System.Net.HttpStatusCode] $StatusCode
-    [System.Net.WebHeaderCollection] $FakeHeaders
+    # Hides the base property, whose getter throws NotImplementedException.
+    # Windows PowerShell 5.1 does not dispatch a get_Headers() method as an
+    # override, so a hiding property is the form that works on both editions.
+    [System.Net.WebHeaderCollection] $Headers
     [byte[]] $Payload
 
     FakeWebResponse([int] $status, [hashtable] $headers, [string] $body) {
         $this.StatusCode = [System.Net.HttpStatusCode] $status
-        $this.FakeHeaders = New-Object -TypeName System.Net.WebHeaderCollection
-        foreach ($key in $headers.Keys) { $this.FakeHeaders.Add($key, [string] $headers[$key]) }
+        $this.Headers = New-Object -TypeName System.Net.WebHeaderCollection
+        foreach ($key in $headers.Keys) { $this.Headers.Add($key, [string] $headers[$key]) }
         $this.Payload = [System.Text.Encoding]::UTF8.GetBytes($body)
     }
-
-    [System.Net.WebHeaderCollection] get_Headers() { return $this.FakeHeaders }
 
     [System.IO.Stream] GetResponseStream() { return (New-Object -TypeName System.IO.MemoryStream -ArgumentList (, $this.Payload)) }
 }
