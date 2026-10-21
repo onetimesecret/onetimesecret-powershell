@@ -16,7 +16,8 @@ every cmdlet carries the **`Ots`** noun prefix (`New-OtsSecret`,
   anything destructive, typed objects with default views, comment-based help
   for every cmdlet, and errors you can branch on.
 - **No dependencies**: built on `Invoke-WebRequest` alone.
-- **Windows PowerShell 5.1 and PowerShell 7+** on Windows, macOS and Linux.
+- **Windows PowerShell 5.1 and PowerShell 7+** on Windows, macOS and Linux
+  (see [Supported PowerShell versions](#supported-powershell-versions)).
 - **API v2** only. (v1 is in maintenance mode; the v3 preview is not stable.)
 
 ## Installation
@@ -30,6 +31,29 @@ Or, from a clone of this repository:
 ```powershell
 Import-Module ./src/OnetimeSecret/OnetimeSecret.psd1
 ```
+
+## Supported PowerShell versions
+
+- **Windows PowerShell 5.1** (Desktop edition) on Windows.
+- **PowerShell 7.x** (Core edition) on Windows, macOS and Linux.
+
+CI runs every change on all four (7 on Ubuntu, macOS and Windows, plus
+5.1), and the published module declares both editions. There are no other
+dependencies; HTTP goes through `Invoke-WebRequest`.
+
+The two differ in one place: how a failed HTTP request reaches the module.
+On PowerShell 7 requests are sent with `-SkipHttpErrorCheck`, so 4xx/5xx
+replies come back as ordinary responses and the `HttpResponseException`,
+which carries the whole request including the `Authorization` header, is
+never thrown and never lands in `$Error`. Windows PowerShell 5.1 has no such
+switch: `Invoke-WebRequest` throws a `WebException`, the module reads the
+status, headers and body from its `Response` and discards the exception.
+That `WebException` does pass through `$Error`, but it holds only the
+response, not the request headers, so the credential stays out of it on both
+editions. The error records the module itself raises are identical on both.
+
+On 5.1 the module also opts the process into TLS 1.2 at import, which
+older Windows builds do not enable by default.
 
 ## Quick start
 

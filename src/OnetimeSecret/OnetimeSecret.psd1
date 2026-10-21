@@ -14,6 +14,9 @@
 
     FormatsToProcess     = @('OnetimeSecret.Format.ps1xml')
 
+    # HelpInfoURI is deliberately absent: the module ships comment-based help
+    # and the about_ topic only, with no updatable (Update-Help) package.
+
     # Explicit export lists keep Import-Module fast and make the public
     # surface a deliberate decision. Add new cmdlets here.
     FunctionsToExport    = @(
@@ -44,6 +47,8 @@
             )
             LicenseUri   = 'https://github.com/onetimesecret/onetimesecret-powershell/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/onetimesecret/onetimesecret-powershell'
+            # No module icon exists yet; the Gallery shows its default until a
+            # stable public PNG URL goes here.
             IconUri      = ''
             ReleaseNotes = 'https://github.com/onetimesecret/onetimesecret-powershell/blob/main/CHANGELOG.md'
             # Set to e.g. 'preview1' to publish a prerelease to the PowerShell Gallery.
