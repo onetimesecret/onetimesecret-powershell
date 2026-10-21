@@ -143,4 +143,56 @@ function New-FakeApiErrorRecord {
     return $record
 }
 
-Export-ModuleMember -Function New-FakeHttpResponse, Get-SentJsonBody, New-FakeReceiptRecord, New-FakeSecretRecord, New-FakeApiErrorRecord
+class FakeWebResponse : System.Net.WebResponse {
+    <#
+        The HttpWebResponse stand-in for the Windows PowerShell 5.1 error
+        shape: a status code, a WebHeaderCollection and a body behind
+        GetResponseStream(). HttpWebResponse itself cannot be constructed.
+    #>
+    [System.Net.HttpStatusCode] $StatusCode
+    [System.Net.WebHeaderCollection] $FakeHeaders
+    [byte[]] $Payload
+
+    FakeWebResponse([int] $status, [hashtable] $headers, [string] $body) {
+        $this.StatusCode = [System.Net.HttpStatusCode] $status
+        $this.FakeHeaders = New-Object -TypeName System.Net.WebHeaderCollection
+        foreach ($key in $headers.Keys) { $this.FakeHeaders.Add($key, [string] $headers[$key]) }
+        $this.Payload = [System.Text.Encoding]::UTF8.GetBytes($body)
+    }
+
+    [System.Net.WebHeaderCollection] get_Headers() { return $this.FakeHeaders }
+
+    [System.IO.Stream] GetResponseStream() { return (New-Object -TypeName System.IO.MemoryStream -ArgumentList (, $this.Payload)) }
+}
+
+function New-FakeWebExceptionRecord {
+    <#
+        Builds the ErrorRecord Invoke-WebRequest throws on Windows PowerShell
+        5.1: a real System.Net.WebException whose Response carries the status,
+        headers and body, and no ErrorDetails. Lets the 5.1 catch path run
+        under PowerShell 7 too.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [int] $StatusCode,
+
+        [Parameter()]
+        [object] $Body,
+
+        [Parameter()]
+        [hashtable] $Headers = @{}
+    )
+
+    $json = if ($null -eq $Body) { '' } else { ConvertTo-Json -InputObject $Body -Compress }
+    $response = [FakeWebResponse]::new($StatusCode, $Headers, $json)
+    $exception = New-Object -TypeName System.Net.WebException -ArgumentList (
+        ('The remote server returned an error: ({0}).' -f $StatusCode),
+        $null,
+        [System.Net.WebExceptionStatus]::ProtocolError,
+        $response
+    )
+    return (New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception, 'WebCmdletWebResponseException', 'InvalidOperation', $null)
+}
+
+Export-ModuleMember -Function New-FakeHttpResponse, Get-SentJsonBody, New-FakeReceiptRecord, New-FakeSecretRecord, New-FakeApiErrorRecord, New-FakeWebExceptionRecord

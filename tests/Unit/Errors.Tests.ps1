@@ -65,6 +65,32 @@ Describe 'API error handling' {
         $failure.Exception.InnerException.Message | Should -Match '403'
     }
 
+    It 'reads status, body and Retry-After from a WebException (Windows PowerShell 5.1)' {
+        Mock -ModuleName OnetimeSecret Start-Sleep { }
+        $script:webCalls = 0
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            $script:webCalls++
+            if ($script:webCalls -eq 1) { throw (New-FakeWebExceptionRecord -StatusCode 429 -Body @{ error = 'slow down' } -Headers @{ 'Retry-After' = '6' }) }
+            throw (New-FakeWebExceptionRecord -StatusCode 404 -Body @{ error = 'Unknown secret'; error_type = 'RecordNotFound'; request_id = 'req-51' })
+        }
+
+        $failure = $null
+        try { Get-OtsSecret -SecretId missing -ErrorAction Stop } catch { $failure = $_ }
+
+        # Retry-After came from the WebHeaderCollection, the body from GetResponseStream().
+        Should -Invoke -ModuleName OnetimeSecret Start-Sleep -Times 1 -Exactly -ParameterFilter { $Seconds -eq 6 }
+        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 2 -Exactly
+        $failure.FullyQualifiedErrorId | Should -Match '^OnetimeSecret\.Api\.RecordNotFound'
+        $failure.CategoryInfo.Category | Should -Be 'ObjectNotFound'
+        $failure.Exception.Data['StatusCode'] | Should -Be 404
+        $failure.Exception.Data['RequestId'] | Should -Be 'req-51'
+        $failure.Exception.Data['Response'].error | Should -Be 'Unknown secret'
+        # The WebException itself is discarded; only its message is kept.
+        $failure.Exception.InnerException | Should -BeOfType [System.Exception]
+        $failure.Exception.InnerException | Should -Not -BeOfType [System.Net.WebException]
+        $failure.Exception.InnerException.Message | Should -Match '\(404\)'
+    }
+
     It 'maps a 401 to AuthenticationError with a recommended action' {
         Mock -ModuleName OnetimeSecret Invoke-WebRequest {
             throw (New-FakeApiErrorRecord -StatusCode 401 -Body @{ error = 'Authentication required'; error_type = 'Unauthorized' })
@@ -197,6 +223,53 @@ Describe 'API error handling' {
         # -ErrorVariable also records the internal exceptions that were caught
         # and translated, so look for the one the cmdlet actually surfaced.
         @($errors | Where-Object { $_.FullyQualifiedErrorId -like 'OnetimeSecret.Api.RecordNotFound*' }).Count | Should -BeGreaterOrEqual 1
+    }
+}
+
+Describe 'Verbose output' {
+    BeforeAll {
+        $token = ConvertTo-SecureString -String 'tok_verbose_secret' -AsPlainText -Force
+        $script:Authenticated = Connect-OtsAccount -ServerUri 'https://eu.onetimesecret.com' -Credential (New-Object System.Management.Automation.PSCredential -ArgumentList 'ur1abc23def', $token) -PassThru
+        $script:Forbidden = @(
+            'hunter2-verbose'
+            'tok_verbose_secret'
+            'Authorization'
+            'Basic '
+            [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes('ur1abc23def:tok_verbose_secret'))
+        )
+    }
+
+    It 'never writes the request body or the Authorization header on success' {
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            New-FakeHttpResponse -Body @{ record = @{ receipt = (New-FakeReceiptRecord); secret = (New-FakeSecretRecord) } }
+        }
+
+        $stream = New-OtsSecret -Secret 'hunter2-verbose' -Connection $Authenticated -Verbose 4>&1
+        $verbose = @($stream | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] } | ForEach-Object Message)
+
+        $verbose.Count | Should -BeGreaterOrEqual 1
+        $verbose | Should -Contain 'POST https://eu.onetimesecret.com/api/v2/secret/conceal'
+        foreach ($line in $verbose) {
+            foreach ($needle in $Forbidden) { $line | Should -Not -Match ([regex]::Escape($needle)) }
+        }
+    }
+
+    It 'never writes the request body or the Authorization header on failure or retry' {
+        Mock -ModuleName OnetimeSecret Start-Sleep { }
+        $script:verboseCalls = 0
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            $script:verboseCalls++
+            if ($script:verboseCalls -eq 1) { return (New-FakeHttpResponse -StatusCode 503 -Body @{ error = 'down' }) }
+            New-FakeHttpResponse -StatusCode 403 -Body @{ error = 'nope'; error_type = 'Forbidden' }
+        }
+
+        $stream = Get-OtsReceipt -ReceiptId rcp1111111111111111111111 -Connection $Authenticated -Verbose -ErrorAction SilentlyContinue 4>&1
+        $verbose = @($stream | Where-Object { $_ -is [System.Management.Automation.VerboseRecord] } | ForEach-Object Message)
+
+        $verbose.Count | Should -BeGreaterOrEqual 2
+        foreach ($line in $verbose) {
+            foreach ($needle in $Forbidden) { $line | Should -Not -Match ([regex]::Escape($needle)) }
+        }
     }
 }
 

@@ -73,6 +73,32 @@ Describe 'Get-OtsReceipt' {
         $receipt.BurnUrl | Should -Be 'https://eu.onetimesecret.com/receipt/rcp1111111111111111111111/burn'
     }
 
+    It 'prefers the share_url the server reports over a constructed one' {
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            $record = New-FakeReceiptRecord
+            $record['share_domain'] = 'secrets.example.com'
+            $record['share_url'] = 'https://secrets.example.com/secret/sec2222222222222222222222'
+            New-FakeHttpResponse -Body @{ record = $record }
+        }
+
+        $receipt = Get-OtsReceipt -ReceiptId rcp1111111111111111111111
+
+        $receipt.ShareUrl | Should -Be 'https://secrets.example.com/secret/sec2222222222222222222222'
+        $receipt.ShareDomain | Should -Be 'secrets.example.com'
+        $receipt.ReceiptUrl | Should -Be 'https://eu.onetimesecret.com/receipt/rcp1111111111111111111111'
+    }
+
+    It 'falls back to a constructed share link when the server reports one for a different secret' {
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            $record = New-FakeReceiptRecord
+            $record['share_url'] = 'https://eu.onetimesecret.com/secret/secSOMETHINGELSE'
+            New-FakeHttpResponse -Body @{ record = $record }
+        }
+
+        $receipt = Get-OtsReceipt -ReceiptId rcp1111111111111111111111
+        $receipt.ShareUrl | Should -Be 'https://eu.onetimesecret.com/secret/sec2222222222222222222222'
+    }
+
     It 'drops the share link when the server reports it without an identifier' {
         Mock -ModuleName OnetimeSecret Invoke-WebRequest {
             $record = New-FakeReceiptRecord -State 'burned'
