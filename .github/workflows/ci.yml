@@ -33,6 +33,10 @@ jobs:
           - name: Windows PowerShell 5.1
             os: windows-latest
             shell: powershell
+    defaults:
+      run:
+        # steps[*].shell does not accept expressions; job defaults do.
+        shell: ${{ matrix.shell }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -47,11 +51,9 @@ jobs:
           key: psmodules-${{ runner.os }}-${{ matrix.shell }}-${{ hashFiles('build.ps1') }}
 
       - name: Bootstrap build dependencies
-        shell: ${{ matrix.shell }}
         run: ./build.ps1 -Bootstrap
 
       - name: Analyze and test
-        shell: ${{ matrix.shell }}
         run: ./build.ps1 -Task Analyze, Test
 
       - name: Upload test results
@@ -86,16 +88,17 @@ jobs:
     env:
       OTS_INTEGRATION: ${{ vars.ONETIME_BASE_URL != '' && '1' || '0' }}
       ONETIME_BASE_URL: ${{ vars.ONETIME_BASE_URL }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Bootstrap build dependencies
-        shell: ${{ matrix.shell }}
         run: ./build.ps1 -Bootstrap
 
       - name: Run integration tests
-        shell: ${{ matrix.shell }}
         run: |
           Import-Module Pester -MinimumVersion 5.5.0 -MaximumVersion 5.99.99
           $configuration = New-PesterConfiguration
