@@ -1,0 +1,4 @@
+# Default owners for everything in the repository; GitHub requests their
+# review on every pull request. The onetimesecret organisation has no teams
+# yet; switch to @onetimesecret/<team> once one exists.
+* @delano
