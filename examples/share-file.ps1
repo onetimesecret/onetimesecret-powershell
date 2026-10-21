@@ -14,8 +14,11 @@ param(
     [string[]] $Recipient
 )
 
-# Connection comes from ONETIME_BASE_URL / ONETIME_CUSTOMER_EXTID / ONETIME_API_TOKEN.
-Import-Module OnetimeSecret -ErrorAction Stop
+# Prefer the module in this clone so the examples run without installing it;
+# fall back to an installed copy (Install-Module OnetimeSecret).
+$manifest = Join-Path (Split-Path -Parent $PSScriptRoot) 'src/OnetimeSecret/OnetimeSecret.psd1'
+if (Test-Path $manifest) { Import-Module $manifest -Force -ErrorAction Stop }
+else { Import-Module OnetimeSecret -ErrorAction Stop }
 
 $parameters = @{
     Secret      = Get-Content -Path $Path -Raw
