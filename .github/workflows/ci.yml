@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Cache PowerShell modules
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.local/share/powershell/Modules
@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.shell }}
           path: |
@@ -133,7 +133,7 @@ jobs:
           (Get-OtsConnection).ServerUri
 
       - name: Upload module package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: OnetimeSecret-module
           path: output/*.zip
