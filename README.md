@@ -174,6 +174,27 @@ twice on 429/502/503/504 with backoff, honouring `Retry-After`.
 ticks. Timestamps on returned objects are local `DateTime`s; durations are
 `TimeSpan`s. The untouched API record is always available as `RawResponse`.
 
+## Examples
+
+The scripts in [examples/](examples/) are small, complete programs that run
+straight from a clone (they import the module from `src/`, or an installed
+copy if `src/` is absent). They read the same environment variables as the
+other Onetime Secret SDKs and work anonymously when no credentials are set:
+
+```powershell
+$env:ONETIME_BASE_URL = 'https://eu.onetimesecret.com'   # your region or your own instance
+# Optional, for an authenticated session:
+# $env:ONETIME_CUSTOMER_EXTID = 'ur1abc23def'
+# $env:ONETIME_API_TOKEN = '...'
+
+./examples/roundtrip.ps1                          # conceal, inspect, reveal, confirm the state changed
+./examples/share-file.ps1 -Path ./notes.txt -Hours 2
+./examples/wait-for-pickup.ps1 -TimeoutMinutes 5  # poll until the link is opened, else burn
+```
+
+`roundtrip.ps1` defaults to `https://eu.onetimesecret.com` when
+`ONETIME_BASE_URL` is unset; the other two require it.
+
 ## Development
 
 ```powershell

@@ -8,6 +8,11 @@ The release workflow requires a `## [X.Y.Z]` section matching the tag.
 
 ## [Unreleased]
 
+### Added
+
+- `examples/roundtrip.ps1`: conceal, inspect, reveal and confirm the receipt
+  state changed, against any server, anonymously or with credentials.
+
 ### Fixed
 
 - Failed API calls no longer carry the underlying HTTP exception on the
