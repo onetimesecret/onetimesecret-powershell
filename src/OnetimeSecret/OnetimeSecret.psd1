@@ -8,7 +8,7 @@
     GUID                 = 'db732d55-d4da-4e0a-b772-f766058f9a4c'
     Author               = 'Delano Mandelbaum'
     CompanyName          = 'Onetime Secret'
-    Copyright            = '(c) 2026 Delano Mandelbaum and contributors. MIT License.'
+    Copyright            = '(c) 2026 Onetime Secret. MIT License.'
     Description          = 'Official PowerShell client for the Onetime Secret API (v2). Create, share, reveal and burn self-destructing secrets from the command line or automation.'
     PowerShellVersion    = '5.1'
 
