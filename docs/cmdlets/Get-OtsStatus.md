@@ -14,12 +14,12 @@ Reports whether the Onetime Secret service is up.
 
 ### Connection (Default)
 ```
-Get-OtsStatus [-Connection <Object>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
+Get-OtsStatus [-Connection <Object>] [<CommonParameters>]
 ```
 
 ### ServerUri
 ```
-Get-OtsStatus [-ServerUri] <String[]> [-ProgressAction <ActionPreference>] [<CommonParameters>]
+Get-OtsStatus [-ServerUri] <String[]> [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -55,21 +55,6 @@ Connection to use instead of the default from Connect-OtsAccount.
 Type: Object
 Parameter Sets: Connection
 Aliases:
-
-Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -ProgressAction
-{{ Fill ProgressAction Description }}
-
-```yaml
-Type: ActionPreference
-Parameter Sets: (All)
-Aliases: proga
 
 Required: False
 Position: Named

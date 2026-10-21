@@ -195,6 +195,18 @@ task Docs {
     }
     New-MarkdownHelp @docParameters | ForEach-Object { Write-Host ('  {0}' -f $_.Name) }
 
+    # platyPS 0.14 predates the -ProgressAction common parameter (PowerShell
+    # 7.4) and emits a "{{ Fill ProgressAction Description }}" placeholder for
+    # it; it also writes CRLF regardless of platform. Tidy both so the
+    # generated pages are stable across hosts.
+    foreach ($page in Get-ChildItem -Path $DocsPath -Filter '*.md') {
+        $text = Get-Content -Path $page.FullName -Raw
+        $text = $text -replace '(?s)\r?\n### -ProgressAction\r?\n.*?```\r?\n', ''
+        $text = $text -replace ' \[-ProgressAction <ActionPreference>\]', ''
+        $text = $text -replace "`r`n", "`n"
+        [System.IO.File]::WriteAllText($page.FullName, $text, [System.Text.UTF8Encoding]::new($false))
+    }
+
     # platyPS's module page is a template full of placeholders; write a real
     # index from the synopses instead.
     $commands = Get-Command -Module $ModuleName | Sort-Object Noun, Verb

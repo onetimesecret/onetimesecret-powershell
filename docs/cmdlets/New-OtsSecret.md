@@ -15,7 +15,7 @@ Creates a one-time secret and returns its receipt, including the share link.
 ### Conceal (Default)
 ```
 New-OtsSecret [-Secret] <String> [-Passphrase <SecureString>] [-Ttl <TimeSpan>] [-Recipient <String[]>]
- [-ShareDomain <String>] [-DisplayType <String>] [-Connection <Object>] [-ProgressAction <ActionPreference>]
+ [-ShareDomain <String>] [-DisplayType <String>] [-Connection <Object>]
  [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
@@ -23,14 +23,14 @@ New-OtsSecret [-Secret] <String> [-Passphrase <SecureString>] [-Ttl <TimeSpan>] 
 ```
 New-OtsSecret -SecureSecret <SecureString> [-Passphrase <SecureString>] [-Ttl <TimeSpan>]
  [-Recipient <String[]>] [-ShareDomain <String>] [-DisplayType <String>] [-Connection <Object>]
- [-ProgressAction <ActionPreference>] [-WhatIf] [-Confirm] [<CommonParameters>]
+ [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ### Generate
 ```
 New-OtsSecret [-Generate] [-Length <Int32>] [-CharacterSet <String[]>] [-ExcludeAmbiguous]
  [-Passphrase <SecureString>] [-Ttl <TimeSpan>] [-Recipient <String[]>] [-ShareDomain <String>]
- [-DisplayType <String>] [-Connection <Object>] [-ProgressAction <ActionPreference>] [-WhatIf] [-Confirm]
+ [-DisplayType <String>] [-Connection <Object>] [-WhatIf] [-Confirm]
  [<CommonParameters>]
 ```
 
@@ -191,21 +191,6 @@ Optional passphrase the recipient must supply to reveal the secret.
 Type: SecureString
 Parameter Sets: (All)
 Aliases:
-
-Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -ProgressAction
-{{ Fill ProgressAction Description }}
-
-```yaml
-Type: ActionPreference
-Parameter Sets: (All)
-Aliases: proga
 
 Required: False
 Position: Named

@@ -13,7 +13,7 @@ Gets a secret's metadata without revealing its value.
 ## SYNTAX
 
 ```
-Get-OtsSecret [-SecretId] <String[]> [-Connection <Object>] [-ProgressAction <ActionPreference>]
+Get-OtsSecret [-SecretId] <String[]> [-Connection <Object>]
  [<CommonParameters>]
 ```
 
@@ -51,21 +51,6 @@ Connection to use instead of the default from Connect-OtsAccount.
 Type: Object
 Parameter Sets: (All)
 Aliases:
-
-Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -ProgressAction
-{{ Fill ProgressAction Description }}
-
-```yaml
-Type: ActionPreference
-Parameter Sets: (All)
-Aliases: proga
 
 Required: False
 Position: Named
