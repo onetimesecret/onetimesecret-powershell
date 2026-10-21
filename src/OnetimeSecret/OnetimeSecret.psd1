@@ -48,6 +48,4 @@
             Prerelease   = ''
         }
     }
-
-    HelpInfoURI          = 'https://github.com/onetimesecret/onetimesecret-powershell'
 }
