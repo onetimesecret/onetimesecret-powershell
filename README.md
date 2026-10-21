@@ -199,7 +199,7 @@ $env:ONETIME_BASE_URL = 'https://eu.onetimesecret.com'   # your region or your o
 
 ```powershell
 ./build.ps1 -Bootstrap        # install InvokeBuild, Pester 5, PSScriptAnalyzer, platyPS
-./build.ps1                   # PSScriptAnalyzer + unit tests
+./build.ps1                   # PSScriptAnalyzer + unit tests (run inside pwsh; -Task takes a list)
 ./build.ps1 -Task Build       # stage a publishable module under output/
 ./build.ps1 -Task Docs        # regenerate docs/cmdlets from comment-based help
 ```
@@ -221,8 +221,9 @@ src/OnetimeSecret/        the module (loaded directly during development)
   Private/                helpers: HTTP, errors, converters, connection
   en-US/                  about_OnetimeSecret help topic
 tests/                    Pester 5 (Module quality gates, Unit, Integration)
-examples/                 small end-to-end scripts
+examples/                 small end-to-end scripts (see Examples above)
 docs/                     releasing.md and generated cmdlet reference
+output/                   build output (gitignored)
 OnetimeSecret.build.ps1   Invoke-Build tasks; build.ps1 bootstraps and runs them
 ```
 
