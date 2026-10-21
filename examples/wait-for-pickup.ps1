@@ -10,6 +10,8 @@ param(
     [int] $TimeoutMinutes = 15
 )
 
+$ErrorActionPreference = 'Stop'
+
 # Prefer the module in this clone so the examples run without installing it;
 # fall back to an installed copy (Install-Module OnetimeSecret).
 $manifest = Join-Path (Split-Path -Parent $PSScriptRoot) 'src/OnetimeSecret/OnetimeSecret.psd1'

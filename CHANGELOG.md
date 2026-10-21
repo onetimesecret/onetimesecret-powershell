@@ -16,6 +16,9 @@ The release workflow requires a `## [X.Y.Z]` section matching the tag.
   serialised the error. HTTP failures are now read from the response
   (`-SkipHttpErrorCheck`) on 7+ and only the transport error's message is
   kept.
+- `examples/share-file.ps1` no longer forces markdown display (servers with
+  it disabled rejected every share); pass `-Markdown` to opt in. The examples
+  stop on the first failed cmdlet instead of printing empty results.
 
 ## [0.1.0] - 2026-10-20
 
