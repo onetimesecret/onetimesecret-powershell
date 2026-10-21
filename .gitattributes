@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+# PowerShell files are consumed on Windows too; LF is fine for pwsh and for
+# Windows PowerShell 5.1, and keeps diffs clean across the matrix.
+*.ps1     text eol=lf
+*.psm1    text eol=lf
+*.psd1    text eol=lf
+*.ps1xml  text eol=lf
+
+*.png binary
+*.zip binary

@@ -1,0 +1,19 @@
+# Build output
+output/
+
+# Pester / coverage artifacts
+testResults.xml
+coverage.xml
+*.trx
+
+# Editors and OS
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local secrets for integration testing (never commit)
+.env
+*.local.ps1
