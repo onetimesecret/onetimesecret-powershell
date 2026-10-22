@@ -142,6 +142,23 @@ Describe 'API error handling' {
         $failure.CategoryInfo.Category | Should -Be 'ResourceUnavailable'
     }
 
+    It 'reports a 2xx body that is not JSON as an invalid response without quoting it' {
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            [PSCustomObject] @{ StatusCode = 200; Content = '{"record":{"secret_value":"hunter2'; Headers = @{} }
+        }
+
+        $failure = $null
+        try { Receive-OtsSecret -SecretId abc -Confirm:$false -ErrorAction Stop } catch { $failure = $_ }
+
+        $failure.FullyQualifiedErrorId | Should -Match '^OnetimeSecret\.InvalidResponse'
+        $failure.CategoryInfo.Category | Should -Be 'InvalidResult'
+        $failure.Exception.Data['StatusCode'] | Should -Be 200
+        $failure.Exception.Message | Should -Match 'HTTP 200\) is not valid JSON'
+        $failure.Exception.InnerException | Should -BeNullOrEmpty
+        ($failure | Out-String) | Should -Not -Match 'hunter2'
+        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly
+    }
+
     It 'reports connection failures without a status code' {
         Mock -ModuleName OnetimeSecret Invoke-WebRequest { throw 'No such host is known' }
 

@@ -35,6 +35,10 @@ The release workflow requires a `## [X.Y.Z]` section matching the tag.
   warning names only the error id and HTTP status. It used to repeat the
   error message, which on Windows PowerShell 5.1 can quote a garbled
   response body, value included.
+- A successful response whose body is not JSON (a proxy or login page, a
+  truncated reply) is reported as `OnetimeSecret.InvalidResponse` with its
+  HTTP status. It was reported as a connection failure carrying the JSON
+  parser's message, which on Windows PowerShell 5.1 quotes the body.
 
 ## [0.1.0] - 2026-10-20
 

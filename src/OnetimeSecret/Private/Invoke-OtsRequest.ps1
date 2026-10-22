@@ -87,7 +87,10 @@ function Invoke-OtsRequest {
                 try { $statusCode = [int] $response.StatusCode } catch { $statusCode = 0 }
             }
 
-            if ($statusCode -lt 400) {
+            if ($statusCode -ge 400) {
+                $failure = ConvertFrom-OtsHttpResponse -Response $response -StatusCode $statusCode
+            }
+            else {
                 $content = $response.Content
                 if ($content -is [byte[]]) {
                     $content = [System.Text.Encoding]::UTF8.GetString($content)
@@ -95,10 +98,12 @@ function Invoke-OtsRequest {
                 if ([string]::IsNullOrWhiteSpace($content)) {
                     return $null
                 }
-                return ($content | ConvertFrom-Json)
+                # The parser's message is not kept as the cause: Windows
+                # PowerShell 5.1 quotes the input in it, and reveal and
+                # receipt bodies carry secret values.
+                try { return ($content | ConvertFrom-Json) }
+                catch { $failure = [PSCustomObject] @{ StatusCode = $statusCode; Body = $null; InvalidJson = $true } }
             }
-
-            $failure = ConvertFrom-OtsHttpResponse -Response $response -StatusCode $statusCode
         }
         catch {
             $failure = ConvertFrom-OtsHttpError -ErrorRecord $_
@@ -261,7 +266,9 @@ function New-OtsErrorRecord {
         request_id } (ADR-013). Those fields are surfaced three ways so callers
         can branch however they prefer:
 
-          - FullyQualifiedErrorId  "OnetimeSecret.Api.<error_type>" (or Http<status>)
+          - FullyQualifiedErrorId  "OnetimeSecret.Api.<error_type>" (or Http<status>;
+                                   OnetimeSecret.InvalidResponse for a 2xx body
+                                   that is not JSON)
           - ErrorCategory          mapped from the HTTP status
           - Exception.Data         StatusCode, ErrorType, Field, ErrorId, RequestId, Uri, Method, Response
 
@@ -305,7 +312,13 @@ function New-OtsErrorRecord {
 
     $accountRequired = ($field -eq 'requires_account') -or ($errorType -match 'AccountRequired|RequiresAccount')
 
-    if ($status -eq 0) {
+    if ($Failure.PSObject.Properties['InvalidJson']) {
+        $category = [System.Management.Automation.ErrorCategory]::InvalidResult
+        $message = 'The response from {0} (HTTP {1}) is not valid JSON.' -f $Uri, $status
+        $fqid = 'OnetimeSecret.InvalidResponse'
+        $recommended = 'Check that the server URI points at a Onetime Secret server and not at a proxy or login page.'
+    }
+    elseif ($status -eq 0) {
         $category = [System.Management.Automation.ErrorCategory]::ConnectionError
         $message = 'Could not reach {0}: {1}' -f $Uri, $Cause
         $fqid = 'OnetimeSecret.ConnectionError'
