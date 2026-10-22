@@ -49,7 +49,10 @@ request.
   format.
 - Integration tests under `tests/Integration/` hit a real server's guest
   endpoints and run only when `ONETIME_LIVE=1` and `ONETIME_BASE_URL`
-  are set.
+  are set. Against a local server, start it with `HOST` set to the host and
+  port in `ONETIME_BASE_URL` (for example `HOST=127.0.0.1:7143`): the server
+  builds the links in receipts from `HOST`, which defaults to
+  `localhost:3000`.
 - Keep `tests/Unit/TestHelpers.psm1` the single source of canned payloads.
 
 ## Pull requests

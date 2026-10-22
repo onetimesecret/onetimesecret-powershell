@@ -96,6 +96,12 @@ Describe 'Guest workflow against <_>' -ForEach @($env:ONETIME_BASE_URL) -Skip:(-
         $receipt.Value | Should -Not -BeNullOrEmpty
         $receipt.Value.Length | Should -Be 20
 
+        # Generate, conceal and the server agree on the link. Against a local
+        # server this fails unless it runs with HOST set to the address in
+        # ONETIME_BASE_URL: the server builds receipt links from HOST.
+        $receipt.ShareUrl | Should -Be ('{0}/secret/{1}' -f (Get-OtsConnection).ServerUri.AbsoluteUri.TrimEnd('/'), $receipt.SecretId)
+        (Get-OtsReceipt -ReceiptId $receipt.ReceiptId).ShareUrl | Should -Be $receipt.ShareUrl
+
         $receipt | Remove-OtsSecret -Confirm:$false
     }
 
