@@ -216,7 +216,12 @@ function New-OtsSecret {
                     $details = Get-OtsProperty $shown 'details' $details
                 }
                 catch {
-                    Write-Warning ('The secret was generated but its value could not be read back ({0}). Open {1} to see it.' -f $_.Exception.Message, ('{0}/receipt/{1}' -f $resolved.ServerUri.AbsoluteUri.TrimEnd('/'), $receiptId))
+                    # Name the failure by error id and status only: the body
+                    # of a failed or garbled receipt read can hold the value.
+                    $reason = ($_.FullyQualifiedErrorId -split ',')[0]
+                    $status = [int] $_.Exception.Data['StatusCode']
+                    if ($status -gt 0) { $reason = '{0}, HTTP {1}' -f $reason, $status }
+                    Write-Warning ('The secret was generated but its value could not be read back ({0}). Open {1} to see it.' -f $reason, ('{0}/receipt/{1}' -f $resolved.ServerUri.AbsoluteUri.TrimEnd('/'), $receiptId))
                 }
             }
 

@@ -167,7 +167,25 @@ Describe 'New-OtsSecret' {
 
         $result.ReceiptId | Should -Be 'rcp1111111111111111111111'
         $result.Value | Should -BeNullOrEmpty
-        $warnings | Should -Not -BeNullOrEmpty
+        $warnings | Should -HaveCount 1
+        $warnings[0].Message | Should -Match '\(OnetimeSecret\.Api\.Http503, HTTP 503\)'
+        $warnings[0].Message | Should -Match 'https://eu\.onetimesecret\.com/receipt/rcp1111111111111111111111'
+    }
+
+    It 'keeps the response out of the warning when the read-back fails' {
+        $generated = @{
+            success = $true
+            record  = @{ receipt = New-FakeReceiptRecord; secret = New-FakeSecretRecord; share_domain = $null }
+        }
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body $generated } -ParameterFilter { $Method -eq 'POST' }
+        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+            throw (New-FakeApiErrorRecord -StatusCode 500 -Body @{ error = 'Abc123XYZ'; error_type = 'ServerError' })
+        } -ParameterFilter { $Method -eq 'GET' }
+
+        $null = New-OtsSecret -Generate -WarningVariable warnings -WarningAction SilentlyContinue
+
+        $warnings[0].Message | Should -Match '\(OnetimeSecret\.Api\.ServerError, HTTP 500\)'
+        $warnings[0].Message | Should -Not -Match 'Abc123XYZ'
     }
 
     It 'builds the share link on the custom domain when one is returned' {

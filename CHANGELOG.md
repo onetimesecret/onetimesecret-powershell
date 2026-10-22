@@ -31,6 +31,10 @@ The release workflow requires a `## [X.Y.Z]` section matching the tag.
   stop on the first failed cmdlet instead of printing empty results.
 - `examples/wait-for-pickup.ps1` reports whether the secret was read, burned
   or expired from the receipt instead of calling every disappearance a pickup.
+- When `New-OtsSecret -Generate` cannot read the generated value back, the
+  warning names only the error id and HTTP status. It used to repeat the
+  error message, which on Windows PowerShell 5.1 can quote a garbled
+  response body, value included.
 
 ## [0.1.0] - 2026-10-20
 
