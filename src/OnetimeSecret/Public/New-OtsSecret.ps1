@@ -208,11 +208,13 @@ function New-OtsSecret {
                 # The server hands out a generated value exactly once: on the
                 # first read of the receipt after creation, not in the create
                 # response itself. Fetch it now so the caller gets it in Value;
-                # a later Get-OtsReceipt would come back empty.
+                # a later Get-OtsReceipt would come back empty. Only the details
+                # are taken: the shown record's links use the server's
+                # configured host, so keeping the created record builds them
+                # from the connection exactly as for a concealed secret.
                 $receiptId = [string] (Get-OtsProperty $receipt 'identifier')
                 try {
                     $shown = Invoke-OtsRequest -Connection $resolved -Method GET -Path ('{0}receipt/{1}' -f $prefix, [uri]::EscapeDataString($receiptId))
-                    $receipt = Get-OtsProperty $shown 'record' $receipt
                     $details = Get-OtsProperty $shown 'details' $details
                 }
                 catch {

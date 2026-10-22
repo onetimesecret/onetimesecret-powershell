@@ -126,8 +126,14 @@ Describe 'New-OtsSecret' {
                 share_domain = $null
             }
         }
+        # The shown record's links come from the server's configured host,
+        # which need not be the host the connection uses.
+        $shownRecord = New-FakeReceiptRecord
+        $shownRecord['share_url'] = 'http://localhost:3000/secret/sec2222222222222222222222'
+        $shownRecord['receipt_url'] = 'http://localhost:3000/receipt/rcp1111111111111111111111'
+        $shownRecord['burn_url'] = 'http://localhost:3000/receipt/rcp1111111111111111111111/burn'
         $shown = @{
-            record  = New-FakeReceiptRecord
+            record  = $shownRecord
             details = @{ type = 'record'; can_decrypt = $true; secret_value = 'Abc123XYZ' }
         }
         Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body $generated } -ParameterFilter { $Method -eq 'POST' }
@@ -152,6 +158,9 @@ Describe 'New-OtsSecret' {
 
         $result.Value | Should -Be 'Abc123XYZ'
         $result.ReceiptId | Should -Be 'rcp1111111111111111111111'
+        $result.ShareUrl | Should -Be 'https://eu.onetimesecret.com/secret/sec2222222222222222222222'
+        $result.ReceiptUrl | Should -Be 'https://eu.onetimesecret.com/receipt/rcp1111111111111111111111'
+        $result.BurnUrl | Should -Be 'https://eu.onetimesecret.com/receipt/rcp1111111111111111111111/burn'
     }
 
     It 'warns but still returns the receipt when the generated value cannot be read back' {

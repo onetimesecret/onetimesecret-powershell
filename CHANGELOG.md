@@ -39,6 +39,11 @@ The release workflow requires a `## [X.Y.Z]` section matching the tag.
   truncated reply) is reported as `OnetimeSecret.InvalidResponse` with its
   HTTP status. It was reported as a connection failure carrying the JSON
   parser's message, which on Windows PowerShell 5.1 quotes the body.
+- `New-OtsSecret -Generate` builds `ShareUrl`, `ReceiptUrl` and `BurnUrl`
+  from the connection, as it does for a concealed secret. It took them from
+  the receipt read that claims the value, which uses the server's configured
+  host, so against a server whose `HOST` differs from the address you
+  connect to (common locally) the two kinds of secret got different links.
 
 ## [0.1.0] - 2026-10-20
 
