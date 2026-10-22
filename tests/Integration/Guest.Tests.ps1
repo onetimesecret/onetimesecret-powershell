@@ -3,7 +3,7 @@
     endpoints, so they need no account. They are skipped unless both of these
     are set:
 
-        OTS_INTEGRATION = 1
+        ONETIME_LIVE = 1
         ONETIME_BASE_URL = https://eu.onetimesecret.com   (or any instance)
 
     Each run creates a handful of short-lived secrets and burns or reveals
@@ -14,7 +14,7 @@
 param()
 
 BeforeDiscovery {
-    $script:RunLive = ($env:OTS_INTEGRATION -eq '1') -and -not [string]::IsNullOrWhiteSpace($env:ONETIME_BASE_URL)
+    $script:RunLive = ($env:ONETIME_LIVE -eq '1') -and -not [string]::IsNullOrWhiteSpace($env:ONETIME_BASE_URL)
 }
 
 BeforeAll {

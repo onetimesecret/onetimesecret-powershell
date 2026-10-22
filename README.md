@@ -240,7 +240,7 @@ Live tests against the guest endpoints (they create, then burn or reveal,
 a few five-minute secrets):
 
 ```powershell
-$env:OTS_INTEGRATION = '1'
+$env:ONETIME_LIVE = '1'
 $env:ONETIME_BASE_URL = 'https://eu.onetimesecret.com'
 ./build.ps1 -Task Test
 ```

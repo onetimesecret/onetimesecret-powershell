@@ -24,7 +24,7 @@ Import-Module ./src/OnetimeSecret/OnetimeSecret.psd1 -Force   # try it
 ```
 
 Live tests against a real server's guest endpoints run only with
-`OTS_INTEGRATION=1` and `ONETIME_BASE_URL` set.
+`ONETIME_LIVE=1` and `ONETIME_BASE_URL` set.
 
 ## Layout
 

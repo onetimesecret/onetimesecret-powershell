@@ -48,7 +48,7 @@ request.
   have been sent. Add a test for every new parameter that changes the wire
   format.
 - Integration tests under `tests/Integration/` hit a real server's guest
-  endpoints and run only when `OTS_INTEGRATION=1` and `ONETIME_BASE_URL`
+  endpoints and run only when `ONETIME_LIVE=1` and `ONETIME_BASE_URL`
   are set.
 - Keep `tests/Unit/TestHelpers.psm1` the single source of canned payloads.
 

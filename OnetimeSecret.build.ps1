@@ -4,7 +4,7 @@
     Tasks:
       Clean     remove output/
       Analyze   PSScriptAnalyzer over src/, tests/, examples/ and the build scripts
-      Test      Pester unit tests (set OTS_INTEGRATION=1 for the live tests too)
+      Test      Pester unit tests (set ONETIME_LIVE=1 for the live tests too)
       Build     stage a publishable module in output/OnetimeSecret/<version>/
       Docs      regenerate docs/cmdlets/*.md from comment-based help (platyPS)
       Package   zip the staged module (output/OnetimeSecret-<version>.zip)
