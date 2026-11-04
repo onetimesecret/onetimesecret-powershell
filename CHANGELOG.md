@@ -20,6 +20,9 @@ The release workflow requires a `## [X.Y.Z]` section matching the tag.
 
 ### Fixed
 
+- The README no longer recommends `Install-Module OnetimeSecret` or shows a
+  Gallery badge. The module is not on the Gallery, and that name resolves to
+  the unrelated community module `OneTimeSecret`.
 - Failed API calls no longer carry the underlying HTTP exception on the
   error record. On PowerShell 7 that exception holds the full request,
   `Authorization` header included, and reached `$Error` and anything that

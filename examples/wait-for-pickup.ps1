@@ -21,7 +21,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Prefer the module in this clone so the examples run without installing it;
-# fall back to an installed copy (Install-Module OnetimeSecret).
+# fall back to an installed copy.
 $manifest = Join-Path (Split-Path -Parent $PSScriptRoot) 'src/OnetimeSecret/OnetimeSecret.psd1'
 if (Test-Path $manifest) { Import-Module $manifest -Force -ErrorAction Stop }
 else { Import-Module OnetimeSecret -ErrorAction Stop }

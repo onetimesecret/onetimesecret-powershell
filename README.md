@@ -1,7 +1,6 @@
 # OnetimeSecret PowerShell module
 
 [![CI](https://github.com/onetimesecret/onetimesecret-powershell/actions/workflows/ci.yml/badge.svg)](https://github.com/onetimesecret/onetimesecret-powershell/actions/workflows/ci.yml)
-[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/OnetimeSecret)](https://www.powershellgallery.com/packages/OnetimeSecret)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 The official PowerShell client for the [Onetime Secret](https://onetimesecret.com)
@@ -22,14 +21,16 @@ every cmdlet carries the **`Ots`** noun prefix (`New-OtsSecret`,
 
 ## Installation
 
-```powershell
-Install-Module OnetimeSecret -Scope CurrentUser
-```
+This module is not on the PowerShell Gallery. Do not run
+`Install-Module OnetimeSecret`: Gallery names are case-insensitive, so that
+command installs [`OneTimeSecret`](https://www.powershellgallery.com/packages/OneTimeSecret),
+an unrelated community module that predates API v2.
 
-Or, from a clone of this repository:
+Install from a clone of this repository:
 
 ```powershell
-Import-Module ./src/OnetimeSecret/OnetimeSecret.psd1
+git clone https://github.com/onetimesecret/onetimesecret-powershell.git
+Import-Module ./onetimesecret-powershell/src/OnetimeSecret/OnetimeSecret.psd1
 ```
 
 ## Supported PowerShell versions

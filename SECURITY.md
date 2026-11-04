@@ -12,7 +12,7 @@ Onetime Secret's wider policy, including scope and safe-harbour terms, is at
 
 ## Supported versions
 
-Only the latest minor release on the PowerShell Gallery receives fixes.
+Only the latest minor release receives fixes.
 
 ## What this module does with your secrets
 

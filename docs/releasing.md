@@ -5,15 +5,22 @@ and the one-time setup a maintainer needs before the first release.
 
 ## Names
 
-- **`OnetimeSecret`** is the module name on the PowerShell Gallery and the
-  name people `Import-Module`. Module names are PascalCase by convention and
-  must be unique on the Gallery.
+- **`OnetimeSecret`** is the name people `Import-Module` and the name the
+  release workflow publishes to the PowerShell Gallery. Module names are
+  PascalCase by convention and must be unique on the Gallery, ignoring case.
 - **`Ots`** is the noun prefix on every cmdlet (`New-OtsSecret`,
   `Get-OtsReceipt`), following the `Verb-PrefixNoun` convention that keeps
   cmdlets from colliding with other modules.
 - **`onetimesecret-powershell`** is the repository name, matching the rest of
   the SDK family (`onetimesecret-ruby`, …). Repository and package names do not
   need to match.
+
+**Blocker for the first release:** the Gallery name is taken. The community
+module [`OneTimeSecret`](https://www.powershellgallery.com/packages/OneTimeSecret),
+by Craig Gumbley, matches `OnetimeSecret` once case is ignored, so expect the
+publish step to be rejected. Rename this module for the Gallery, or get
+ownership of the name transferred, before tagging a release. Until then the
+Gallery commands in this guide resolve to the community module.
 
 ## One-time setup
 
