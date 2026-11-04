@@ -6,7 +6,7 @@ body:
     id: version
     attributes:
       label: Module and PowerShell version
-      description: Output of `(Get-Module OnetimeSecret).Version` and `$PSVersionTable.PSVersion`
+      description: Output of `(Get-Module OnetimeSecretV2).Version` and `$PSVersionTable.PSVersion`
       placeholder: "0.1.0 on 7.4.6 (macOS)"
     validations:
       required: true

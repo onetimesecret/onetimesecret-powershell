@@ -2,11 +2,11 @@
 
 Generated from the module's comment-based help by `./build.ps1 -Task Docs`
 (platyPS). Do not edit these files by hand; change the help in
-`src/OnetimeSecret/Public/*.ps1` and regenerate.
+`src/OnetimeSecretV2/Public/*.ps1` and regenerate.
 
 | Cmdlet | Synopsis |
 | ------ | -------- |
-| [Connect-OtsAccount](Connect-OtsAccount.md) | Establishes the connection that other OnetimeSecret cmdlets use. |
+| [Connect-OtsAccount](Connect-OtsAccount.md) | Establishes the connection that other OnetimeSecretV2 cmdlets use. |
 | [Disconnect-OtsAccount](Disconnect-OtsAccount.md) | Forgets the default connection set by Connect-OtsAccount. |
 | [Get-OtsConnection](Get-OtsConnection.md) | Returns the connection the module is currently using. |
 | [Get-OtsReceipt](Get-OtsReceipt.md) | Gets receipts: the creator-side record of a secret's state and links. |
@@ -20,4 +20,4 @@ Generated from the module's comment-based help by `./build.ps1 -Task Docs`
 | [Get-OtsSupportedLocale](Get-OtsSupportedLocale.md) | Lists the locales a Onetime Secret server can serve. |
 | [Get-OtsVersion](Get-OtsVersion.md) | Reports the version of the Onetime Secret server you are connected to. |
 
-See also `Get-Help about_OnetimeSecret`.
+See also `Get-Help about_OnetimeSecretV2`.

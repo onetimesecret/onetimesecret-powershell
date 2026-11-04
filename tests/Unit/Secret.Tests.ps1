@@ -3,8 +3,8 @@ param()
 
 BeforeAll {
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    Get-Module OnetimeSecret | Remove-Module -Force
-    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecret') 'OnetimeSecret.psd1') -Force
+    Get-Module OnetimeSecretV2 | Remove-Module -Force
+    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecretV2') 'OnetimeSecretV2.psd1') -Force
     Import-Module (Join-Path $PSScriptRoot 'TestHelpers.psm1') -Force
 
     $token = ConvertTo-SecureString -String 'tok_test' -AsPlainText -Force
@@ -31,13 +31,13 @@ AfterAll {
 
 Describe 'New-OtsSecret' {
     BeforeEach {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body $ConcealResponse }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body $ConcealResponse }
     }
 
     It 'posts the secret under the v2 envelope with Basic auth' {
         $result = New-OtsSecret -Secret 'hunter2'
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/secret/conceal' -and
             $Method -eq 'POST' -and
             $Headers['Authorization'] -eq ('Basic ' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('ur1abc23def:tok_test'))) -and
@@ -63,7 +63,7 @@ Describe 'New-OtsSecret' {
     It 'uses the guest endpoint and no Authorization header on anonymous connections' {
         New-OtsSecret -Secret 'hunter2' -Connection $Anonymous | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/guest/secret/conceal' -and
             -not $Headers.ContainsKey('Authorization')
         }
@@ -73,7 +73,7 @@ Describe 'New-OtsSecret' {
         $pass = ConvertTo-SecureString -String 'pw12' -AsPlainText -Force
         New-OtsSecret -Secret 'x' -Passphrase $pass -Ttl (New-TimeSpan -Minutes 90) -Recipient 'a@example.com', 'b@example.com' -ShareDomain 'secrets.example.com' -DisplayType markdown | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $sent = (Get-SentJsonBody $Body).secret
             $sent.passphrase -eq 'pw12' -and
             $sent.ttl -eq 5400 -and
@@ -86,7 +86,7 @@ Describe 'New-OtsSecret' {
     It 'omits optional fields by default' {
         New-OtsSecret -Secret 'x' | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $sent = (Get-SentJsonBody $Body).secret
             $names = @($sent.PSObject.Properties.Name)
             ($names -notcontains 'passphrase') -and ($names -notcontains 'ttl') -and
@@ -99,7 +99,7 @@ Describe 'New-OtsSecret' {
         $secure = ConvertTo-SecureString -String 'from-secure' -AsPlainText -Force
         New-OtsSecret -SecureSecret $secure | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             (Get-SentJsonBody $Body).secret.secret -eq 'from-secure'
         }
     }
@@ -107,14 +107,14 @@ Describe 'New-OtsSecret' {
     It 'accepts the secret from the pipeline' {
         'piped' | New-OtsSecret | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             (Get-SentJsonBody $Body).secret.secret -eq 'piped'
         }
     }
 
     It 'rejects a sub-second Ttl (the integer-as-ticks footgun)' {
         { New-OtsSecret -Secret 'x' -Ttl 3600 } | Should -Throw -ExpectedMessage '*at least one second*'
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 0
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 0
     }
 
     It 'generates with length and character sets, then reads the value back from the receipt' {
@@ -136,15 +136,15 @@ Describe 'New-OtsSecret' {
             record  = $shownRecord
             details = @{ type = 'record'; can_decrypt = $true; secret_value = 'Abc123XYZ' }
         }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body $generated } -ParameterFilter { $Method -eq 'POST' }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body $shown } -ParameterFilter { $Method -eq 'GET' }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body $generated } -ParameterFilter { $Method -eq 'POST' }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body $shown } -ParameterFilter { $Method -eq 'GET' }
 
         $result = New-OtsSecret -Generate -Length 24 -CharacterSet Uppercase, Numbers -ExcludeAmbiguous
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Method -eq 'GET' -and $Uri -eq 'https://eu.onetimesecret.com/api/v2/receipt/rcp1111111111111111111111'
         }
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $sent = (Get-SentJsonBody $Body).secret
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/secret/generate' -and
             $sent.kind -eq 'generate' -and
@@ -168,9 +168,9 @@ Describe 'New-OtsSecret' {
             success = $true
             record  = @{ receipt = New-FakeReceiptRecord; secret = New-FakeSecretRecord; share_domain = $null }
         }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body $generated } -ParameterFilter { $Method -eq 'POST' }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { throw (New-FakeApiErrorRecord -StatusCode 503 -Body @{ error = 'busy' }) } -ParameterFilter { $Method -eq 'GET' }
-        Mock -ModuleName OnetimeSecret Start-Sleep { }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body $generated } -ParameterFilter { $Method -eq 'POST' }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { throw (New-FakeApiErrorRecord -StatusCode 503 -Body @{ error = 'busy' }) } -ParameterFilter { $Method -eq 'GET' }
+        Mock -ModuleName OnetimeSecretV2 Start-Sleep { }
 
         $result = New-OtsSecret -Generate -WarningVariable warnings -WarningAction SilentlyContinue
 
@@ -186,8 +186,8 @@ Describe 'New-OtsSecret' {
             success = $true
             record  = @{ receipt = New-FakeReceiptRecord; secret = New-FakeSecretRecord; share_domain = $null }
         }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body $generated } -ParameterFilter { $Method -eq 'POST' }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body $generated } -ParameterFilter { $Method -eq 'POST' }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             throw (New-FakeApiErrorRecord -StatusCode 500 -Body @{ error = 'Abc123XYZ'; error_type = 'ServerError' })
         } -ParameterFilter { $Method -eq 'GET' }
 
@@ -206,20 +206,20 @@ Describe 'New-OtsSecret' {
                 share_domain = 'secrets.example.com'
             }
         }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body $withDomain }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body $withDomain }
 
         (New-OtsSecret -Secret 'x').ShareUrl | Should -Be 'https://secrets.example.com/secret/sec2222222222222222222222'
     }
 
     It 'honours -WhatIf' {
         New-OtsSecret -Secret 'x' -WhatIf
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 0
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 0
     }
 }
 
 Describe 'Get-OtsSecret' {
     BeforeEach {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{ record = (New-FakeSecretRecord -State 'previewed'); details = @{ show_secret = $false } }
         }
     }
@@ -227,7 +227,7 @@ Describe 'Get-OtsSecret' {
     It 'requests metadata by identifier' {
         $secret = Get-OtsSecret -SecretId sec2222222222222222222222
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/secret/sec2222222222222222222222' -and $Method -eq 'GET'
         }
         $secret.PSObject.TypeNames | Should -Contain 'OnetimeSecret.Secret'
@@ -239,7 +239,7 @@ Describe 'Get-OtsSecret' {
     It 'accepts a share link' {
         Get-OtsSecret 'https://eu.onetimesecret.com/secret/sec2222222222222222222222' | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/secret/sec2222222222222222222222'
         }
     }
@@ -248,7 +248,7 @@ Describe 'Get-OtsSecret' {
         $receipt = [PSCustomObject] @{ PSTypeName = 'OnetimeSecret.Receipt'; ReceiptId = 'rcp1'; SecretId = 'secFromPipe' }
         $receipt | Get-OtsSecret | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -like '*/api/v2/secret/secFromPipe'
         }
     }
@@ -256,13 +256,13 @@ Describe 'Get-OtsSecret' {
 
 Describe 'Get-OtsSecretStatus' {
     It 'uses the single-status endpoint for one identifier' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{ record = (New-FakeSecretRecord); details = @{ current_expiration = 1900000000 } }
         }
 
         $status = Get-OtsSecretStatus -SecretId sec2222222222222222222222
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/secret/sec2222222222222222222222/status' -and $Method -eq 'GET'
         }
         $status.PSObject.TypeNames | Should -Contain 'OnetimeSecret.SecretStatus'
@@ -272,7 +272,7 @@ Describe 'Get-OtsSecretStatus' {
     }
 
     It 'reports unknown secrets without erroring' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ record = @{ state = 'unknown' } } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ record = @{ state = 'unknown' } } }
 
         $status = Get-OtsSecretStatus -SecretId nope
         $status.Exists | Should -BeFalse
@@ -281,7 +281,7 @@ Describe 'Get-OtsSecretStatus' {
     }
 
     It 'batches several identifiers into one POST and preserves order' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{
                 records = @(
                     (New-FakeSecretRecord -SecretId 'bbbbbbbbbb' -State 'received')
@@ -293,7 +293,7 @@ Describe 'Get-OtsSecretStatus' {
 
         $statuses = @('aaaaaaaaaa', 'bbbbbbbbbb', 'cccccccccc' | Get-OtsSecretStatus)
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/secret/status' -and
             $Method -eq 'POST' -and
             @((Get-SentJsonBody $Body).identifiers).Count -eq 3
@@ -308,7 +308,7 @@ Describe 'Get-OtsSecretStatus' {
 
 Describe 'Receive-OtsSecret' {
     BeforeEach {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{ record = (New-FakeSecretRecord -State 'revealed' -Value 'hunter2'); details = @{ show_secret = $true } }
         }
     }
@@ -316,7 +316,7 @@ Describe 'Receive-OtsSecret' {
     It 'posts continue=true and returns the value' {
         $secret = Receive-OtsSecret -SecretId sec2222222222222222222222
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/secret/sec2222222222222222222222/reveal' -and
             $Method -eq 'POST' -and
             (Get-SentJsonBody $Body).continue -eq $true
@@ -329,7 +329,7 @@ Describe 'Receive-OtsSecret' {
         $pass = ConvertTo-SecureString -String 'pw12' -AsPlainText -Force
         Receive-OtsSecret sec2222222222222222222222 -Passphrase $pass | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             (Get-SentJsonBody $Body).passphrase -eq 'pw12'
         }
     }
@@ -342,23 +342,23 @@ Describe 'Receive-OtsSecret' {
 
     It 'uses the guest endpoint anonymously' {
         Receive-OtsSecret sec2222222222222222222222 -Connection $Anonymous | Out-Null
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/guest/secret/sec2222222222222222222222/reveal'
         }
     }
 
     It 'does nothing with -WhatIf' {
         Receive-OtsSecret sec2222222222222222222222 -WhatIf
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 0
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 0
     }
 }
 
 Describe 'Get-OtsStatus' {
     It 'reports a healthy service' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; status = 'nominal'; locale = 'en' } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; status = 'nominal'; locale = 'en' } }
 
         $status = Get-OtsStatus
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/status'
         }
         $status.IsHealthy | Should -BeTrue
@@ -366,7 +366,7 @@ Describe 'Get-OtsStatus' {
     }
 
     It 'checks arbitrary servers without connecting' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; status = 'nominal'; locale = 'en' } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; status = 'nominal'; locale = 'en' } }
 
         $statuses = @('https://us.onetimesecret.com', 'https://ca.onetimesecret.com' | Get-OtsStatus)
         $statuses.Count | Should -Be 2

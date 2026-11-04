@@ -1,6 +1,6 @@
 ---
-external help file: OnetimeSecret-help.xml
-Module Name: OnetimeSecret
+external help file: OnetimeSecretV2-help.xml
+Module Name: OnetimeSecretV2
 online version: https://api.onetimesecret.com/doc/api-v2/operation/operation-v2_systemversion
 schema: 2.0.0
 ---

@@ -19,8 +19,8 @@ BeforeDiscovery {
 
 BeforeAll {
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    Get-Module OnetimeSecret | Remove-Module -Force
-    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecret') 'OnetimeSecret.psd1') -Force
+    Get-Module OnetimeSecretV2 | Remove-Module -Force
+    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecretV2') 'OnetimeSecretV2.psd1') -Force
 
     if ($RunLive) {
         Connect-OtsAccount -ServerUri $env:ONETIME_BASE_URL -Anonymous

@@ -7,8 +7,8 @@
 
 BeforeDiscovery {
     $script:RepoRoot = Split-Path -Parent $PSScriptRoot
-    $script:ModulePath = Join-Path (Join-Path $RepoRoot 'src') 'OnetimeSecret'
-    $script:ManifestPath = Join-Path $ModulePath 'OnetimeSecret.psd1'
+    $script:ModulePath = Join-Path (Join-Path $RepoRoot 'src') 'OnetimeSecretV2'
+    $script:ManifestPath = Join-Path $ModulePath 'OnetimeSecretV2.psd1'
 
     $script:PublicFunctions = @(Get-ChildItem -Path (Join-Path $ModulePath 'Public') -Filter '*.ps1' | ForEach-Object BaseName)
     $script:SourceFiles = @(
@@ -21,10 +21,10 @@ BeforeDiscovery {
 
 BeforeAll {
     $script:RepoRoot = Split-Path -Parent $PSScriptRoot
-    $script:ModulePath = Join-Path (Join-Path $RepoRoot 'src') 'OnetimeSecret'
-    $script:ManifestPath = Join-Path $ModulePath 'OnetimeSecret.psd1'
+    $script:ModulePath = Join-Path (Join-Path $RepoRoot 'src') 'OnetimeSecretV2'
+    $script:ManifestPath = Join-Path $ModulePath 'OnetimeSecretV2.psd1'
 
-    Get-Module OnetimeSecret | Remove-Module -Force
+    Get-Module OnetimeSecretV2 | Remove-Module -Force
     $script:Module = Import-Module $ManifestPath -Force -PassThru
 }
 
@@ -66,7 +66,7 @@ Describe 'Module manifest' {
 Describe 'Public cmdlet <_>' -ForEach $PublicFunctions {
     BeforeAll {
         $script:Name = $_
-        $script:Command = Get-Command -Name $Name -Module OnetimeSecret
+        $script:Command = Get-Command -Name $Name -Module OnetimeSecretV2
         $script:Help = Get-Help -Name $Name -Full
     }
 
@@ -119,7 +119,7 @@ Describe 'PSScriptAnalyzer' {
             (Join-Path $RepoRoot 'src')
             (Join-Path $RepoRoot 'tests')
             (Join-Path $RepoRoot 'examples')
-            (Join-Path $RepoRoot 'OnetimeSecret.build.ps1')
+            (Join-Path $RepoRoot 'OnetimeSecretV2.build.ps1')
             (Join-Path $RepoRoot 'build.ps1')
         )
         $script:Results = @(foreach ($target in $targets) { Invoke-ScriptAnalyzer -Path $target -Recurse -Settings $settings })

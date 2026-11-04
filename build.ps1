@@ -5,7 +5,7 @@
 .DESCRIPTION
     Entry point for local development and CI. Installs the pinned build
     modules into the current user's scope when they are missing, then hands
-    off to OnetimeSecret.build.ps1.
+    off to OnetimeSecretV2.build.ps1.
 
 .PARAMETER Task
     One or more Invoke-Build tasks. Defaults to '.' (Analyze + Test).
@@ -84,7 +84,7 @@ Import-Module InvokeBuild -MinimumVersion $requirements.InvokeBuild
 # Build script parameters are exposed by Invoke-Build as dynamic parameters.
 $buildParameters = @{
     Task = $Task
-    File = Join-Path $PSScriptRoot 'OnetimeSecret.build.ps1'
+    File = Join-Path $PSScriptRoot 'OnetimeSecretV2.build.ps1'
 }
 if ($PSBoundParameters.ContainsKey('Version')) { $buildParameters['Version'] = $Version }
 Invoke-Build @buildParameters

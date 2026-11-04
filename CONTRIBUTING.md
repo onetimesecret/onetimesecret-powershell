@@ -9,7 +9,7 @@ git clone https://github.com/onetimesecret/onetimesecret-powershell
 cd onetimesecret-powershell
 ./build.ps1 -Bootstrap            # InvokeBuild, Pester 5, PSScriptAnalyzer, platyPS
 ./build.ps1                       # Analyze + Test
-Import-Module ./src/OnetimeSecret/OnetimeSecret.psd1 -Force   # try it
+Import-Module ./src/OnetimeSecretV2/OnetimeSecretV2.psd1 -Force   # try it
 ```
 
 Windows PowerShell 5.1 and PowerShell 7 are both supported, and CI runs
@@ -18,7 +18,7 @@ request.
 
 ## Conventions
 
-- **One public cmdlet per file** in `src/OnetimeSecret/Public/`, named after
+- **One public cmdlet per file** in `src/OnetimeSecretV2/Public/`, named after
   the cmdlet. Private helpers live in `Private/` and may group related
   functions in one file.
 - **Approved verbs** (`Get-Verb`) and the `Ots` noun prefix. Nouns are
@@ -44,7 +44,7 @@ request.
 ## Tests
 
 - Unit tests mock `Invoke-WebRequest` inside the module
-  (`Mock -ModuleName OnetimeSecret`) and assert on the request that would
+  (`Mock -ModuleName OnetimeSecretV2`) and assert on the request that would
   have been sent. Add a test for every new parameter that changes the wire
   format.
 - Integration tests under `tests/Integration/` hit a real server's guest

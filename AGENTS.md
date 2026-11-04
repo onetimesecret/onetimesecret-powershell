@@ -5,7 +5,7 @@ CONTRIBUTING.md has the same material with more context.
 
 ## What this is
 
-`OnetimeSecret`: the official PowerShell module for the Onetime Secret API
+`OnetimeSecretV2`: the official PowerShell module for the Onetime Secret API
 v2. Cmdlets use the `Ots` noun prefix (`New-OtsSecret`, `Get-OtsReceipt`).
 No dependencies beyond `Invoke-WebRequest`; runs on Windows PowerShell 5.1
 and PowerShell 7+ on Windows, macOS and Linux. One of a family of SDKs
@@ -20,7 +20,7 @@ semantics, but it is idiomatic PowerShell, not a port.
 ./build.ps1                   # Analyze + Test; run before finishing
 ./build.ps1 -Task Build       # stage the single-file module under output/
 ./build.ps1 -Task Docs        # regenerate docs/cmdlets from comment-based help
-Import-Module ./src/OnetimeSecret/OnetimeSecret.psd1 -Force   # try it
+Import-Module ./src/OnetimeSecretV2/OnetimeSecretV2.psd1 -Force   # try it
 ```
 
 Live tests against a real server's guest endpoints run only with
@@ -28,11 +28,11 @@ Live tests against a real server's guest endpoints run only with
 
 ## Layout
 
-- `src/OnetimeSecret/Public/`: one exported cmdlet per file, named after it.
-- `src/OnetimeSecret/Private/`: `Invoke-OtsRequest` (the only HTTP call
+- `src/OnetimeSecretV2/Public/`: one exported cmdlet per file, named after it.
+- `src/OnetimeSecretV2/Private/`: `Invoke-OtsRequest` (the only HTTP call
   site, retries, error records), converters to typed objects, connection
   resolution.
-- `src/OnetimeSecret/OnetimeSecret.psd1`: manifest; `FunctionsToExport` is
+- `src/OnetimeSecretV2/OnetimeSecretV2.psd1`: manifest; `FunctionsToExport` is
   explicit and must match `Public/`.
 - `tests/`: Pester 5. `Module.Tests.ps1` is the quality gate (manifest,
   help, analyzer); `Unit/` mocks `Invoke-WebRequest` and asserts on the

@@ -3,8 +3,8 @@ param()
 
 BeforeAll {
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    Get-Module OnetimeSecret | Remove-Module -Force
-    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecret') 'OnetimeSecret.psd1') -Force
+    Get-Module OnetimeSecretV2 | Remove-Module -Force
+    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecretV2') 'OnetimeSecretV2.psd1') -Force
     Import-Module (Join-Path $PSScriptRoot 'TestHelpers.psm1') -Force
 
     $token = ConvertTo-SecureString -String 'tok_test' -AsPlainText -Force
@@ -20,11 +20,11 @@ AfterAll {
 
 Describe 'Get-OtsStatus' {
     It 'reads the public status endpoint' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; status = 'nominal'; locale = 'en' } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; status = 'nominal'; locale = 'en' } }
 
         $status = Get-OtsStatus
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/status' -and $Method -eq 'GET'
         }
         $status.PSObject.TypeNames | Should -Contain 'OnetimeSecret.ServiceStatus'
@@ -33,23 +33,23 @@ Describe 'Get-OtsStatus' {
     }
 
     It 'checks several servers from the pipeline without a connection' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; status = 'nominal'; locale = 'en' } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; status = 'nominal'; locale = 'en' } }
 
         $results = @('https://us.onetimesecret.com', 'https://eu.onetimesecret.com' | Get-OtsStatus)
 
         $results.Count | Should -Be 2
         $results[0].ServerUri.Host | Should -Be 'us.onetimesecret.com'
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter { -not $Headers.ContainsKey('Authorization') -and $Uri -like 'https://us.*' }
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter { -not $Headers.ContainsKey('Authorization') -and $Uri -like 'https://us.*' }
     }
 }
 
 Describe 'Get-OtsVersion' {
     It 'reads the version endpoint with Basic auth and projects a [version]' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; version = @(0, 26, 5); locale = 'en' } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; version = @(0, 26, 5); locale = 'en' } }
 
         $result = Get-OtsVersion
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/version' -and
             $Method -eq 'GET' -and
             $Headers['Authorization'] -like 'Basic *'
@@ -63,7 +63,7 @@ Describe 'Get-OtsVersion' {
     }
 
     It 'keeps a prerelease component in the string but out of the [version]' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; version = @(1, 0, 0, 'rc1'); locale = 'en' } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; version = @(1, 0, 0, 'rc1'); locale = 'en' } }
 
         $result = Get-OtsVersion
 
@@ -72,7 +72,7 @@ Describe 'Get-OtsVersion' {
     }
 
     It 'surfaces the 401 the server returns to anonymous callers as an AuthenticationError' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -StatusCode 401 -Body @{ error = 'Authentication Required'; message = '[AUTH_HEADER_MISSING] No authorization header' }
         }
 
@@ -89,7 +89,7 @@ Describe 'Get-OtsVersion' {
 
 Describe 'Get-OtsSupportedLocale' {
     BeforeEach {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{ success = $true; locales = @('de', 'en', 'fr_FR'); default_locale = 'en'; locale = 'en' }
         }
     }
@@ -97,7 +97,7 @@ Describe 'Get-OtsSupportedLocale' {
     It 'reads the supported-locales endpoint' {
         $result = Get-OtsSupportedLocale
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/supported-locales' -and $Method -eq 'GET'
         }
         $result.PSObject.TypeNames | Should -Contain 'OnetimeSecret.SupportedLocales'
@@ -110,13 +110,13 @@ Describe 'Get-OtsSupportedLocale' {
         $result = Get-OtsSupportedLocale -ServerUri 'https://us.onetimesecret.com'
 
         $result.ServerUri.Host | Should -Be 'us.onetimesecret.com'
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://us.onetimesecret.com/api/v2/supported-locales' -and -not $Headers.ContainsKey('Authorization')
         }
     }
 
     It 'returns an empty list when the server reports none' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; locales = @(); default_locale = 'en'; locale = 'en' } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ success = $true; locales = @(); default_locale = 'en'; locale = 'en' } }
 
         $result = Get-OtsSupportedLocale
         @($result.Locales).Count | Should -Be 0

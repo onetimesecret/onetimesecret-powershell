@@ -1,11 +1,11 @@
 # Releasing
 
-How the `OnetimeSecret` module gets from `main` to the PowerShell Gallery,
+How the `OnetimeSecretV2` module gets from `main` to the PowerShell Gallery,
 and the one-time setup a maintainer needs before the first release.
 
 ## Names
 
-- **`OnetimeSecret`** is the name people `Import-Module` and the name the
+- **`OnetimeSecretV2`** is the name people `Import-Module` and the name the
   release workflow publishes to the PowerShell Gallery. Module names are
   PascalCase by convention and must be unique on the Gallery, ignoring case.
 - **`Ots`** is the noun prefix on every cmdlet (`New-OtsSecret`,
@@ -15,12 +15,16 @@ and the one-time setup a maintainer needs before the first release.
   the SDK family (`onetimesecret-ruby`, …). Repository and package names do not
   need to match.
 
-**Blocker for the first release:** the Gallery name is taken. The community
-module [`OneTimeSecret`](https://www.powershellgallery.com/packages/OneTimeSecret),
-by Craig Gumbley, matches `OnetimeSecret` once case is ignored, so expect the
-publish step to be rejected. Rename this module for the Gallery, or get
-ownership of the name transferred, before tagging a release. Until then the
-Gallery commands in this guide resolve to the community module.
+The module is not called `OnetimeSecret` because the Gallery compares names
+without case, and the community module
+[`OneTimeSecret`](https://www.powershellgallery.com/packages/OneTimeSecret), by
+Craig Gumbley, already uses that name. The `V2` suffix matches the Python SDK
+(`onetimesecret-v2`) and identifies the server API generation, not the module
+version. `OnetimeSecretV2` is not reserved until the first release publishes it.
+
+Type names and error ids keep the `OnetimeSecret.` prefix
+(`OnetimeSecret.Receipt`, `OnetimeSecret.Api.RecordNotFound`). They are not
+Gallery names, so the conflict does not apply to them.
 
 ## One-time setup
 
@@ -38,7 +42,7 @@ GitHub as a secret.
    - **Expires in**: 365 days (the maximum). Put the expiry in the team
      calendar; a lapsed key is the most common reason a release fails.
    - **Scope**: *Push new packages and package versions*.
-   - **Glob pattern**: `OnetimeSecret` (exact name, so the key cannot publish
+   - **Glob pattern**: `OnetimeSecretV2` (exact name, so the key cannot publish
      anything else).
 3. Copy the key once; the Gallery will not show it again.
 
@@ -79,7 +83,7 @@ settled; within `0.x`, a minor bump may change parameters or output shapes
 and the changelog says so.
 
 The version lives in exactly one place:
-`src/OnetimeSecret/OnetimeSecret.psd1` → `ModuleVersion`, plus
+`src/OnetimeSecretV2/OnetimeSecretV2.psd1` → `ModuleVersion`, plus
 `PrivateData.PSData.Prerelease` for a preview label. The release workflow
 refuses to publish if the tag does not match both.
 
@@ -93,7 +97,7 @@ breaking change with early adopters.
 1. Make sure `main` is green in CI on all four matrix legs (PowerShell 7 on
    Linux/macOS/Windows and Windows PowerShell 5.1).
 2. Set `ModuleVersion` (and `Prerelease`, or clear it) in
-   `src/OnetimeSecret/OnetimeSecret.psd1`.
+   `src/OnetimeSecretV2/OnetimeSecretV2.psd1`.
 3. Move the `## [Unreleased]` notes in `CHANGELOG.md` into a new
    `## [X.Y.Z] - YYYY-MM-DD` section (for a prerelease, `## [X.Y.Z-label]`).
    The workflow fails without a matching section.
@@ -113,7 +117,7 @@ breaking change with early adopters.
 6. Tag and push the tag:
 
    ```sh
-   git tag -a v0.2.0 -m "OnetimeSecret 0.2.0"
+   git tag -a v0.2.0 -m "OnetimeSecretV2 0.2.0"
    git push origin v0.2.0
    ```
 
@@ -121,7 +125,7 @@ The tag runs `.github/workflows/release.yml`, which:
 
 - checks the tag against the manifest and the changelog,
 - runs PSScriptAnalyzer and the Pester suite,
-- builds the single-file module into `output/OnetimeSecret/<version>/`,
+- builds the single-file module into `output/OnetimeSecretV2/<version>/`,
 - publishes it to the Gallery with `Publish-Module`,
 - creates a GitHub Release with the changelog section as notes and the
   packaged zip attached (marked *pre-release* when the tag has a label).
@@ -129,9 +133,9 @@ The tag runs `.github/workflows/release.yml`, which:
 Verify:
 
 ```powershell
-Find-Module OnetimeSecret -AllVersions -AllowPrerelease
-Install-Module OnetimeSecret -RequiredVersion 0.2.0 -Scope CurrentUser
-Get-Command -Module OnetimeSecret
+Find-Module OnetimeSecretV2 -AllVersions -AllowPrerelease
+Install-Module OnetimeSecretV2 -RequiredVersion 0.2.0 -Scope CurrentUser
+Get-Command -Module OnetimeSecretV2
 ```
 
 The Gallery indexes a new version within a few minutes; `Find-Module` may lag

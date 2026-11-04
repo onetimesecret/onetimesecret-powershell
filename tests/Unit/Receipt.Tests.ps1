@@ -3,8 +3,8 @@ param()
 
 BeforeAll {
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    Get-Module OnetimeSecret | Remove-Module -Force
-    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecret') 'OnetimeSecret.psd1') -Force
+    Get-Module OnetimeSecretV2 | Remove-Module -Force
+    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecretV2') 'OnetimeSecretV2.psd1') -Force
     Import-Module (Join-Path $PSScriptRoot 'TestHelpers.psm1') -Force
 
     $token = ConvertTo-SecureString -String 'tok_test' -AsPlainText -Force
@@ -20,7 +20,7 @@ AfterAll {
 
 Describe 'Get-OtsReceipt' {
     It 'lists recent receipts when no identifier is given' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{
                 records = @(
                     (New-FakeReceiptRecord -ReceiptId 'rcpAAAAAAAAAAAAA' -SecretId 'secAAAAAAAAAAAAA')
@@ -33,7 +33,7 @@ Describe 'Get-OtsReceipt' {
 
         $receipts = @(Get-OtsReceipt)
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/receipt/recent' -and $Method -eq 'GET'
         }
         $receipts.Count | Should -Be 2
@@ -42,13 +42,13 @@ Describe 'Get-OtsReceipt' {
     }
 
     It 'refuses to list anonymously' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { throw 'should not be called' }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { throw 'should not be called' }
         { Get-OtsReceipt -Connection $Anonymous } | Should -Throw -ExpectedMessage '*authenticated connection*'
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 0
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 0
     }
 
     It 'shows a receipt by identifier with its URLs and details' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $record = New-FakeReceiptRecord -State 'received'
             $record['is_received'] = $true
             $record['received'] = 1792538905
@@ -62,7 +62,7 @@ Describe 'Get-OtsReceipt' {
 
         $receipt = Get-OtsReceipt -ReceiptId rcp1111111111111111111111
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/receipt/rcp1111111111111111111111'
         }
         $receipt.IsReceived | Should -BeTrue
@@ -74,7 +74,7 @@ Describe 'Get-OtsReceipt' {
     }
 
     It 'prefers the share_url the server reports over a constructed one' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $record = New-FakeReceiptRecord
             $record['share_domain'] = 'secrets.example.com'
             $record['share_url'] = 'https://secrets.example.com/secret/sec2222222222222222222222'
@@ -89,7 +89,7 @@ Describe 'Get-OtsReceipt' {
     }
 
     It 'falls back to a constructed share link when the server reports one for a different secret' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $record = New-FakeReceiptRecord
             $record['share_url'] = 'https://eu.onetimesecret.com/secret/secSOMETHINGELSE'
             New-FakeHttpResponse -Body @{ record = $record }
@@ -100,7 +100,7 @@ Describe 'Get-OtsReceipt' {
     }
 
     It 'drops the share link when the server reports it without an identifier' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $record = New-FakeReceiptRecord -State 'burned'
             $record['secret_identifier'] = $null
             $record['share_url'] = 'https://eu.onetimesecret.com/secret/'
@@ -113,20 +113,20 @@ Describe 'Get-OtsReceipt' {
     }
 
     It 'accepts receipt links, including the legacy /private/ alias' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ record = (New-FakeReceiptRecord) } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ record = (New-FakeReceiptRecord) } }
 
         Get-OtsReceipt 'https://eu.onetimesecret.com/receipt/rcp1111111111111111111111' | Out-Null
         Get-OtsReceipt 'https://eu.onetimesecret.com/private/rcp1111111111111111111111' | Out-Null
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 2 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 2 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/receipt/rcp1111111111111111111111'
         }
     }
 
     It 'uses the guest endpoint anonymously' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { New-FakeHttpResponse -Body @{ record = (New-FakeReceiptRecord) } }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { New-FakeHttpResponse -Body @{ record = (New-FakeReceiptRecord) } }
         Get-OtsReceipt rcp1111111111111111111111 -Connection $Anonymous | Out-Null
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/guest/receipt/rcp1111111111111111111111'
         }
     }
@@ -134,7 +134,7 @@ Describe 'Get-OtsReceipt' {
 
 Describe 'Set-OtsReceipt' {
     BeforeEach {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $record = New-FakeReceiptRecord
             $record['memo'] = 'hello'
             New-FakeHttpResponse -Body @{ record = $record }
@@ -144,7 +144,7 @@ Describe 'Set-OtsReceipt' {
     It 'patches the memo' {
         $result = Set-OtsReceipt -ReceiptId rcp1111111111111111111111 -Memo 'hello' -PassThru
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/receipt/rcp1111111111111111111111' -and
             $Method -eq 'PATCH' -and
             (Get-SentJsonBody $Body).memo -eq 'hello'
@@ -168,10 +168,10 @@ Describe 'Set-OtsReceipt' {
 Describe 'Remove-OtsSecret' {
     BeforeEach {
         # The burn endpoint echoes the pre-burn record; the follow-up GET has the truth.
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{ record = (New-FakeReceiptRecord -State 'new'); details = @{ type = 'record'; title = 'Secret burned' } }
         } -ParameterFilter { $Method -eq 'POST' }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{ record = (New-FakeReceiptRecord -State 'burned'); details = @{ type = 'record' } }
         } -ParameterFilter { $Method -eq 'GET' }
     }
@@ -179,7 +179,7 @@ Describe 'Remove-OtsSecret' {
     It 'burns via the receipt identifier with continue=true' {
         Remove-OtsSecret -ReceiptId rcp1111111111111111111111
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/receipt/rcp1111111111111111111111/burn' -and
             $Method -eq 'POST' -and
             (Get-SentJsonBody $Body).continue -eq $true
@@ -188,13 +188,13 @@ Describe 'Remove-OtsSecret' {
 
     It 'returns nothing and makes no extra request without -PassThru' {
         Remove-OtsSecret -ReceiptId rcp1111111111111111111111 | Should -BeNullOrEmpty
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 0 -ParameterFilter { $Method -eq 'GET' }
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 0 -ParameterFilter { $Method -eq 'GET' }
     }
 
     It 'returns the re-read receipt with -PassThru' {
         $result = Remove-OtsSecret -ReceiptId rcp1111111111111111111111 -PassThru
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Method -eq 'GET' -and $Uri -eq 'https://eu.onetimesecret.com/api/v2/receipt/rcp1111111111111111111111'
         }
         $result.State | Should -Be 'burned'
@@ -208,26 +208,26 @@ Describe 'Remove-OtsSecret' {
         )
         $receipts | Remove-OtsSecret
 
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 2 -Exactly
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter { $Method -eq 'POST' -and $Uri -like '*/receipt/rcpTWO/burn' }
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 2 -Exactly
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter { $Method -eq 'POST' -and $Uri -like '*/receipt/rcpTWO/burn' }
     }
 
     It 'sends the passphrase' {
         $pass = ConvertTo-SecureString -String 'pw12' -AsPlainText -Force
         Remove-OtsSecret rcp1111111111111111111111 -Passphrase $pass
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             (Get-SentJsonBody $Body).passphrase -eq 'pw12'
         }
     }
 
     It 'does nothing with -WhatIf' {
         Remove-OtsSecret rcp1111111111111111111111 -WhatIf
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 0
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 0
     }
 
     It 'uses the guest endpoint anonymously' {
         Remove-OtsSecret rcp1111111111111111111111 -Connection $Anonymous
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
             $Uri -eq 'https://eu.onetimesecret.com/api/v2/guest/receipt/rcp1111111111111111111111/burn'
         }
     }

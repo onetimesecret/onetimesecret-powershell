@@ -1,8 +1,8 @@
 @{
-    # Module manifest for OnetimeSecret, the official PowerShell SDK for
+    # Module manifest for OnetimeSecretV2, the official PowerShell SDK for
     # Onetime Secret (https://onetimesecret.com).
 
-    RootModule           = 'OnetimeSecret.psm1'
+    RootModule           = 'OnetimeSecretV2.psm1'
     ModuleVersion        = '0.1.0'
     CompatiblePSEditions = @('Desktop', 'Core')
     GUID                 = 'db732d55-d4da-4e0a-b772-f766058f9a4c'
@@ -12,7 +12,7 @@
     Description          = 'Official PowerShell client for the Onetime Secret API (v2). Create, share, reveal and burn self-destructing secrets from the command line or automation.'
     PowerShellVersion    = '5.1'
 
-    FormatsToProcess     = @('OnetimeSecret.Format.ps1xml')
+    FormatsToProcess     = @('OnetimeSecretV2.Format.ps1xml')
 
     # HelpInfoURI is deliberately absent: the module ships comment-based help
     # and the about_ topic only, with no updatable (Update-Help) package.
@@ -41,7 +41,7 @@
     PrivateData          = @{
         PSData = @{
             Tags         = @(
-                'OnetimeSecret', 'Onetime', 'Secrets', 'Security', 'Password', 'Sharing',
+                'OnetimeSecretV2', 'OnetimeSecret', 'Onetime', 'Secrets', 'Security', 'Password', 'Sharing',
                 'REST', 'API', 'SDK',
                 'PSEdition_Desktop', 'PSEdition_Core', 'Windows', 'Linux', 'MacOS'
             )

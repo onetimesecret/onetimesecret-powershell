@@ -1,6 +1,6 @@
 ---
-external help file: OnetimeSecret-help.xml
-Module Name: OnetimeSecret
+external help file: OnetimeSecretV2-help.xml
+Module Name: OnetimeSecretV2
 online version: https://api.onetimesecret.com/doc/api-v2/authentication
 schema: 2.0.0
 ---
@@ -8,7 +8,7 @@ schema: 2.0.0
 # Connect-OtsAccount
 
 ## SYNOPSIS
-Establishes the connection that other OnetimeSecret cmdlets use.
+Establishes the connection that other OnetimeSecretV2 cmdlets use.
 
 ## SYNTAX
 

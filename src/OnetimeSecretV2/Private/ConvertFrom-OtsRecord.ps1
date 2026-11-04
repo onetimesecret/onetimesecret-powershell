@@ -1,5 +1,5 @@
 # Converters from raw API records to the typed objects the module emits.
-# Each output object carries a PSTypeName so OnetimeSecret.Format.ps1xml can
+# Each output object carries a PSTypeName so OnetimeSecretV2.Format.ps1xml can
 # shape its default view, and keeps the untouched API record in
 # RawResponse for anything the typed projection does not cover.
 

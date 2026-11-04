@@ -22,9 +22,9 @@ $ErrorActionPreference = 'Stop'
 
 # Prefer the module in this clone so the examples run without installing it;
 # fall back to an installed copy.
-$manifest = Join-Path (Split-Path -Parent $PSScriptRoot) 'src/OnetimeSecret/OnetimeSecret.psd1'
+$manifest = Join-Path (Split-Path -Parent $PSScriptRoot) 'src/OnetimeSecretV2/OnetimeSecretV2.psd1'
 if (Test-Path $manifest) { Import-Module $manifest -Force -ErrorAction Stop }
-else { Import-Module OnetimeSecret -ErrorAction Stop }
+else { Import-Module OnetimeSecretV2 -ErrorAction Stop }
 
 $receipt = New-OtsSecret -Generate -Length 20 -Ttl (New-TimeSpan -Minutes $TimeoutMinutes)
 Write-Host ('Send this link: {0}' -f $receipt.ShareUrl)

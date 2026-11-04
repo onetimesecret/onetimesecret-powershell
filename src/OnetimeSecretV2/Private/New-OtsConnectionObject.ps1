@@ -74,7 +74,7 @@ function Get-OtsUserAgent {
 
     $edition = if ($PSVersionTable.ContainsKey('PSEdition')) { $PSVersionTable.PSEdition } else { 'Desktop' }
     $os = [System.Environment]::OSVersion.Platform
-    return 'OnetimeSecret-PowerShell/{0} (PowerShell/{1}; {2}; {3})' -f $script:ModuleVersion, $PSVersionTable.PSVersion, $edition, $os
+    return 'OnetimeSecretV2-PowerShell/{0} (PowerShell/{1}; {2}; {3})' -f $script:ModuleVersion, $PSVersionTable.PSVersion, $edition, $os
 }
 
 function New-OtsConnectionObject {

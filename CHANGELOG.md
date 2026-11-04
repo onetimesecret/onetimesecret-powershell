@@ -1,12 +1,19 @@
 # Changelog
 
-All notable changes to the `OnetimeSecret` PowerShell module are recorded
+All notable changes to the `OnetimeSecretV2` PowerShell module are recorded
 here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
 The release workflow requires a `## [X.Y.Z]` section matching the tag.
 
 ## [Unreleased]
+
+### Changed
+
+- Renamed the module to `OnetimeSecretV2`, because the Gallery name
+  `OnetimeSecret` resolves to the community module `OneTimeSecret`. Cmdlet
+  names, type names and error ids are unchanged. The `User-Agent` prefix is now
+  `OnetimeSecretV2-PowerShell`.
 
 ### Added
 

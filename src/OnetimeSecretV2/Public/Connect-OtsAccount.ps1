@@ -1,7 +1,7 @@
 function Connect-OtsAccount {
     <#
     .SYNOPSIS
-        Establishes the connection that other OnetimeSecret cmdlets use.
+        Establishes the connection that other OnetimeSecretV2 cmdlets use.
 
     .DESCRIPTION
         Validates the server URI and credential, then stores the resulting

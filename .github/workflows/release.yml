@@ -36,12 +36,12 @@ jobs:
           $tagBase = $Matches['base']
           $tagPre  = $Matches['pre']
 
-          $data = Import-PowerShellDataFile -Path src/OnetimeSecret/OnetimeSecret.psd1
+          $data = Import-PowerShellDataFile -Path src/OnetimeSecretV2/OnetimeSecretV2.psd1
           $manifestBase = $data.ModuleVersion
           $manifestPre  = $data.PrivateData.PSData.Prerelease
 
           if ($tagBase -ne $manifestBase) {
-            throw "Tag $tag does not match ModuleVersion $manifestBase in src/OnetimeSecret/OnetimeSecret.psd1."
+            throw "Tag $tag does not match ModuleVersion $manifestBase in src/OnetimeSecretV2/OnetimeSecretV2.psd1."
           }
           if ([string] $tagPre -ne [string] $manifestPre) {
             throw "Tag prerelease label '$tagPre' does not match PrivateData.PSData.Prerelease '$manifestPre' in the manifest."
@@ -50,7 +50,7 @@ jobs:
           $version = if ($tagPre) { "$tagBase-$tagPre" } else { $tagBase }
           "version=$version" >> $env:GITHUB_OUTPUT
           "prerelease=$([bool] $tagPre)".ToLower() >> $env:GITHUB_OUTPUT
-          Write-Host "Releasing OnetimeSecret $version"
+          Write-Host "Releasing OnetimeSecretV2 $version"
 
       - name: Verify CHANGELOG has an entry for this version
         shell: pwsh
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: powershellgallery.com
-      url: https://www.powershellgallery.com/packages/OnetimeSecret/${{ needs.verify.outputs.version }}
+      url: https://www.powershellgallery.com/packages/OnetimeSecretV2/${{ needs.verify.outputs.version }}
     permissions:
       contents: write # create the GitHub Release
     steps:
@@ -107,14 +107,14 @@ jobs:
           $end = ($rest | Select-String -Pattern '^## \[' | Select-Object -First 1).LineNumber
           $notes = if ($end -gt 1) { $rest[0..($end - 2)] } elseif ($end -eq 1) { @() } else { $rest }
           $body = ($notes -join "`n").Trim()
-          $body += "`n`nInstall: ``Install-Module OnetimeSecret -RequiredVersion $version``"
+          $body += "`n`nInstall: ``Install-Module OnetimeSecretV2 -RequiredVersion $version``"
           Set-Content -Path release-notes.md -Value $body
           Get-Content release-notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          name: OnetimeSecret ${{ needs.verify.outputs.version }}
+          name: OnetimeSecretV2 ${{ needs.verify.outputs.version }}
           body_path: release-notes.md
           prerelease: ${{ needs.verify.outputs.prerelease == 'true' }}
           files: output/*.zip

@@ -5,7 +5,7 @@
 Please do not open a public issue for security problems in this module or in
 the Onetime Secret service. Email **security@onetimesecret.com** with a
 description, steps to reproduce, and the module version (`Get-Module
-OnetimeSecret`). We acknowledge reports within three business days.
+OnetimeSecretV2`). We acknowledge reports within three business days.
 
 Onetime Secret's wider policy, including scope and safe-harbour terms, is at
 <https://github.com/onetimesecret/onetimesecret/blob/main/SECURITY.md>.

@@ -126,14 +126,14 @@ jobs:
       - name: Smoke test the built module
         shell: pwsh
         run: |
-          $manifest = Get-ChildItem output/OnetimeSecret -Recurse -Filter OnetimeSecret.psd1 | Select-Object -First 1
+          $manifest = Get-ChildItem output/OnetimeSecretV2 -Recurse -Filter OnetimeSecretV2.psd1 | Select-Object -First 1
           Import-Module $manifest.FullName -Force
-          Get-Command -Module OnetimeSecret | Format-Table Name, Version
+          Get-Command -Module OnetimeSecretV2 | Format-Table Name, Version
           Connect-OtsAccount -ServerUri https://eu.onetimesecret.com -Anonymous
           (Get-OtsConnection).ServerUri
 
       - name: Upload module package
         uses: actions/upload-artifact@v7
         with:
-          name: OnetimeSecret-module
+          name: OnetimeSecretV2-module
           path: output/*.zip

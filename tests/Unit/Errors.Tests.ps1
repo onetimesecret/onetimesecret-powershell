@@ -3,8 +3,8 @@ param()
 
 BeforeAll {
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    Get-Module OnetimeSecret | Remove-Module -Force
-    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecret') 'OnetimeSecret.psd1') -Force
+    Get-Module OnetimeSecretV2 | Remove-Module -Force
+    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecretV2') 'OnetimeSecretV2.psd1') -Force
     Import-Module (Join-Path $PSScriptRoot 'TestHelpers.psm1') -Force
 
     Connect-OtsAccount -ServerUri 'https://eu.onetimesecret.com' -Anonymous
@@ -17,7 +17,7 @@ AfterAll {
 
 Describe 'API error handling' {
     It 'maps a 404 to ObjectNotFound with the server error type' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             throw (New-FakeApiErrorRecord -StatusCode 404 -Body @{ error = 'Unknown secret'; error_type = 'RecordNotFound'; request_id = 'req-1' })
         }
 
@@ -36,7 +36,7 @@ Describe 'API error handling' {
     }
 
     It 'maps a failure returned as a response (PowerShell 7, -SkipHttpErrorCheck) the same way' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -StatusCode 404 -Body @{ error = 'Unknown secret'; error_type = 'RecordNotFound'; request_id = 'req-2' }
         }
 
@@ -51,7 +51,7 @@ Describe 'API error handling' {
     }
 
     It 'does not chain the transport exception, which would carry the request headers' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             throw (New-FakeApiErrorRecord -StatusCode 403 -Body @{ error = 'nope' })
         }
 
@@ -66,9 +66,9 @@ Describe 'API error handling' {
     }
 
     It 'reads status, body and Retry-After from a WebException (Windows PowerShell 5.1)' {
-        Mock -ModuleName OnetimeSecret Start-Sleep { }
+        Mock -ModuleName OnetimeSecretV2 Start-Sleep { }
         $script:webCalls = 0
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $script:webCalls++
             if ($script:webCalls -eq 1) { throw (New-FakeWebExceptionRecord -StatusCode 429 -Body @{ error = 'slow down' } -Headers @{ 'Retry-After' = '6' }) }
             throw (New-FakeWebExceptionRecord -StatusCode 404 -Body @{ error = 'Unknown secret'; error_type = 'RecordNotFound'; request_id = 'req-51' })
@@ -78,8 +78,8 @@ Describe 'API error handling' {
         try { Get-OtsSecret -SecretId missing -ErrorAction Stop } catch { $failure = $_ }
 
         # Retry-After came from the WebHeaderCollection, the body from GetResponseStream().
-        Should -Invoke -ModuleName OnetimeSecret Start-Sleep -Times 1 -Exactly -ParameterFilter { $Seconds -eq 6 }
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 2 -Exactly
+        Should -Invoke -ModuleName OnetimeSecretV2 Start-Sleep -Times 1 -Exactly -ParameterFilter { $Seconds -eq 6 }
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 2 -Exactly
         $failure.FullyQualifiedErrorId | Should -Match '^OnetimeSecret\.Api\.RecordNotFound'
         $failure.CategoryInfo.Category | Should -Be 'ObjectNotFound'
         $failure.Exception.Data['StatusCode'] | Should -Be 404
@@ -92,7 +92,7 @@ Describe 'API error handling' {
     }
 
     It 'maps a 401 to AuthenticationError with a recommended action' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             throw (New-FakeApiErrorRecord -StatusCode 401 -Body @{ error = 'Authentication required'; error_type = 'Unauthorized' })
         }
 
@@ -104,7 +104,7 @@ Describe 'API error handling' {
     }
 
     It 'maps a 422 with a field to InvalidData' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             throw (New-FakeApiErrorRecord -StatusCode 422 -Body @{ error = 'Incorrect payload format'; error_type = 'FormError'; field = 'ttl' })
         }
 
@@ -117,7 +117,7 @@ Describe 'API error handling' {
     }
 
     It 'treats requires_account form errors as authentication problems' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             throw (New-FakeApiErrorRecord -StatusCode 400 -Body @{ error = 'An account is required'; field = 'requires_account' })
         }
 
@@ -129,7 +129,7 @@ Describe 'API error handling' {
     }
 
     It 'falls back to a status label when the body is not JSON' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $record = New-FakeApiErrorRecord -StatusCode 502
             $record.ErrorDetails = New-Object System.Management.Automation.ErrorDetails -ArgumentList '<html>Bad Gateway</html>'
             throw $record
@@ -143,7 +143,7 @@ Describe 'API error handling' {
     }
 
     It 'reports a 2xx body that is not JSON as an invalid response without quoting it' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             [PSCustomObject] @{ StatusCode = 200; Content = '{"record":{"secret_value":"hunter2'; Headers = @{} }
         }
 
@@ -156,11 +156,11 @@ Describe 'API error handling' {
         $failure.Exception.Message | Should -Match 'HTTP 200\) is not valid JSON'
         $failure.Exception.InnerException | Should -BeNullOrEmpty
         ($failure | Out-String) | Should -Not -Match 'hunter2'
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly
     }
 
     It 'reports connection failures without a status code' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { throw 'No such host is known' }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { throw 'No such host is known' }
 
         $failure = $null
         try { Get-OtsStatus -ErrorAction Stop } catch { $failure = $_ }
@@ -176,9 +176,9 @@ Describe 'API error handling' {
     }
 
     It 'retries a 429 returned as a response and reads Retry-After from its headers' {
-        Mock -ModuleName OnetimeSecret Start-Sleep { }
+        Mock -ModuleName OnetimeSecretV2 Start-Sleep { }
         $script:responseCalls = 0
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $script:responseCalls++
             if ($script:responseCalls -eq 1) { return (New-FakeHttpResponse -StatusCode 429 -Body @{ error = 'slow down' } -Headers @{ 'Retry-After' = '9' }) }
             New-FakeHttpResponse -Body @{ record = (New-FakeSecretRecord) }
@@ -187,14 +187,14 @@ Describe 'API error handling' {
         $secret = Get-OtsSecret -SecretId sec2222222222222222222222
 
         $secret.SecretId | Should -Be 'sec2222222222222222222222'
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 2 -Exactly
-        Should -Invoke -ModuleName OnetimeSecret Start-Sleep -Times 1 -Exactly -ParameterFilter { $Seconds -eq 9 }
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 2 -Exactly
+        Should -Invoke -ModuleName OnetimeSecretV2 Start-Sleep -Times 1 -Exactly -ParameterFilter { $Seconds -eq 9 }
     }
 
     It 'retries GETs on 429 and honours Retry-After, then succeeds' {
-        Mock -ModuleName OnetimeSecret Start-Sleep { }
+        Mock -ModuleName OnetimeSecretV2 Start-Sleep { }
         $script:calls = 0
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $script:calls++
             if ($script:calls -eq 1) { throw (New-FakeApiErrorRecord -StatusCode 429 -Body @{ error = 'slow down' } -RetryAfter 7) }
             New-FakeHttpResponse -Body @{ record = (New-FakeSecretRecord) }
@@ -203,30 +203,30 @@ Describe 'API error handling' {
         $secret = Get-OtsSecret -SecretId sec2222222222222222222222
 
         $secret.SecretId | Should -Be 'sec2222222222222222222222'
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 2 -Exactly
-        Should -Invoke -ModuleName OnetimeSecret Start-Sleep -Times 1 -Exactly -ParameterFilter { $Seconds -eq 7 }
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 2 -Exactly
+        Should -Invoke -ModuleName OnetimeSecretV2 Start-Sleep -Times 1 -Exactly -ParameterFilter { $Seconds -eq 7 }
     }
 
     It 'does not retry POSTs' {
-        Mock -ModuleName OnetimeSecret Start-Sleep { }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { throw (New-FakeApiErrorRecord -StatusCode 503 -Body @{ error = 'down' }) }
+        Mock -ModuleName OnetimeSecretV2 Start-Sleep { }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { throw (New-FakeApiErrorRecord -StatusCode 503 -Body @{ error = 'down' }) }
 
         { New-OtsSecret -Secret 'x' -ErrorAction Stop } | Should -Throw
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 1 -Exactly
-        Should -Invoke -ModuleName OnetimeSecret Start-Sleep -Times 0
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 1 -Exactly
+        Should -Invoke -ModuleName OnetimeSecretV2 Start-Sleep -Times 0
     }
 
     It 'gives up after the retry budget' {
-        Mock -ModuleName OnetimeSecret Start-Sleep { }
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest { throw (New-FakeApiErrorRecord -StatusCode 503 -Body @{ error = 'down' }) }
+        Mock -ModuleName OnetimeSecretV2 Start-Sleep { }
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest { throw (New-FakeApiErrorRecord -StatusCode 503 -Body @{ error = 'down' }) }
 
         { Get-OtsSecret -SecretId abc -ErrorAction Stop } | Should -Throw
-        Should -Invoke -ModuleName OnetimeSecret Invoke-WebRequest -Times 3 -Exactly
+        Should -Invoke -ModuleName OnetimeSecretV2 Invoke-WebRequest -Times 3 -Exactly
     }
 
     It 'writes non-terminating errors per item so a batch continues' {
         $script:n = 0
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $script:n++
             if ($script:n -eq 1) { throw (New-FakeApiErrorRecord -StatusCode 404 -Body @{ error = 'gone'; error_type = 'RecordNotFound' }) }
             New-FakeHttpResponse -Body @{ record = (New-FakeSecretRecord -SecretId 'secOK') }
@@ -257,7 +257,7 @@ Describe 'Verbose output' {
     }
 
     It 'never writes the request body or the Authorization header on success' {
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             New-FakeHttpResponse -Body @{ record = @{ receipt = (New-FakeReceiptRecord); secret = (New-FakeSecretRecord) } }
         }
 
@@ -272,9 +272,9 @@ Describe 'Verbose output' {
     }
 
     It 'never writes the request body or the Authorization header on failure or retry' {
-        Mock -ModuleName OnetimeSecret Start-Sleep { }
+        Mock -ModuleName OnetimeSecretV2 Start-Sleep { }
         $script:verboseCalls = 0
-        Mock -ModuleName OnetimeSecret Invoke-WebRequest {
+        Mock -ModuleName OnetimeSecretV2 Invoke-WebRequest {
             $script:verboseCalls++
             if ($script:verboseCalls -eq 1) { return (New-FakeHttpResponse -StatusCode 503 -Body @{ error = 'down' }) }
             New-FakeHttpResponse -StatusCode 403 -Body @{ error = 'nope'; error_type = 'Forbidden' }
@@ -300,19 +300,19 @@ Describe 'Identifier parsing' {
         @{ Value = '/secret/abc123'; Expected = 'abc123' }
         @{ Value = '  abc123  '; Expected = 'abc123' }
     ) {
-        InModuleScope OnetimeSecret -Parameters @{ Value = $Value } {
+        InModuleScope OnetimeSecretV2 -Parameters @{ Value = $Value } {
             ConvertTo-OtsIdentifier -Value $Value
         } | Should -Be $Expected
     }
 
     It 'rejects values that are neither identifiers nor links' {
-        InModuleScope OnetimeSecret {
+        InModuleScope OnetimeSecretV2 {
             { ConvertTo-OtsIdentifier -Value 'not valid!' } | Should -Throw -ExpectedMessage '*not a valid*'
         }
     }
 
     It 'does not accept a secret link where a receipt is required' {
-        InModuleScope OnetimeSecret {
+        InModuleScope OnetimeSecretV2 {
             { ConvertTo-OtsIdentifier -Value 'https://eu.onetimesecret.com/secret/abc123' -Kind Receipt } | Should -Throw
         }
     }
@@ -320,7 +320,7 @@ Describe 'Identifier parsing' {
 
 Describe 'Value coercion' {
     It 'converts epoch numbers, epoch strings and ISO strings to local DateTime' {
-        InModuleScope OnetimeSecret {
+        InModuleScope OnetimeSecretV2 {
             (ConvertFrom-OtsTimestamp 1792538905.4784453).ToUniversalTime().Year | Should -Be 2026
             (ConvertFrom-OtsTimestamp '1792538905').ToUniversalTime().Year | Should -Be 2026
             (ConvertFrom-OtsTimestamp '2026-10-20T14:00:00Z').ToUniversalTime().Hour | Should -Be 14
@@ -331,7 +331,7 @@ Describe 'Value coercion' {
     }
 
     It 'converts seconds to TimeSpan' {
-        InModuleScope OnetimeSecret {
+        InModuleScope OnetimeSecretV2 {
             ConvertFrom-OtsDuration 300 | Should -Be ([timespan]::FromMinutes(5))
             ConvertFrom-OtsDuration '300' | Should -Be ([timespan]::FromMinutes(5))
             ConvertFrom-OtsDuration $null | Should -BeNullOrEmpty
@@ -339,7 +339,7 @@ Describe 'Value coercion' {
     }
 
     It 'normalises booleans' {
-        InModuleScope OnetimeSecret {
+        InModuleScope OnetimeSecretV2 {
             ConvertTo-OtsBoolean $true | Should -BeTrue
             ConvertTo-OtsBoolean 'true' | Should -BeTrue
             ConvertTo-OtsBoolean '1' | Should -BeTrue
@@ -351,7 +351,7 @@ Describe 'Value coercion' {
     }
 
     It 'normalises recipients' {
-        InModuleScope OnetimeSecret {
+        InModuleScope OnetimeSecretV2 {
             @(ConvertTo-OtsStringArray '') | Should -HaveCount 0
             @(ConvertTo-OtsStringArray 'a@x.com, b@x.com') | Should -Be @('a@x.com', 'b@x.com')
             @(ConvertTo-OtsStringArray @('a@x.com')) | Should -Be @('a@x.com')

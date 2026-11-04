@@ -1,17 +1,17 @@
 #Requires -Version 5.1
 <#
-    OnetimeSecret module loader (development layout).
+    OnetimeSecretV2 module loader (development layout).
 
     During development the module is loaded straight from src/ and this file
     dot-sources every function in Private/ and Public/. The release build
-    (see OnetimeSecret.build.ps1) concatenates those same files into a single
+    (see OnetimeSecretV2.build.ps1) concatenates those same files into a single
     psm1 so the published module has no runtime file discovery to do.
 #>
 
 Set-StrictMode -Version Latest
 
 $script:ModuleRoot        = $PSScriptRoot
-$script:ModuleVersion     = [string] (Import-PowerShellDataFile -Path (Join-Path $PSScriptRoot 'OnetimeSecret.psd1')).ModuleVersion
+$script:ModuleVersion     = [string] (Import-PowerShellDataFile -Path (Join-Path $PSScriptRoot 'OnetimeSecretV2.psd1')).ModuleVersion
 $script:DefaultConnection = $null
 
 # Windows PowerShell 5.1 inherits the .NET Framework default protocol list,

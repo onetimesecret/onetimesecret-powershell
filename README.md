@@ -1,4 +1,4 @@
-# OnetimeSecret PowerShell module
+# OnetimeSecretV2 PowerShell module
 
 [![CI](https://github.com/onetimesecret/onetimesecret-powershell/actions/workflows/ci.yml/badge.svg)](https://github.com/onetimesecret/onetimesecret-powershell/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -7,7 +7,7 @@ The official PowerShell client for the [Onetime Secret](https://onetimesecret.co
 API. Share sensitive information through a link that can only be viewed once.
 
 This repository, **`onetimesecret-powershell`**, is the PowerShell member of
-the Onetime Secret SDK family. The module it ships is **`OnetimeSecret`** and
+the Onetime Secret SDK family. The module it ships is **`OnetimeSecretV2`** and
 every cmdlet carries the **`Ots`** noun prefix (`New-OtsSecret`,
 `Get-OtsReceipt`, …).
 
@@ -21,16 +21,20 @@ every cmdlet carries the **`Ots`** noun prefix (`New-OtsSecret`,
 
 ## Installation
 
-This module is not on the PowerShell Gallery. Do not run
-`Install-Module OnetimeSecret`: Gallery names are case-insensitive, so that
-command installs [`OneTimeSecret`](https://www.powershellgallery.com/packages/OneTimeSecret),
-an unrelated community module that predates API v2.
+This module has not been released to the PowerShell Gallery yet. It will be
+published as `OnetimeSecretV2`. The `V2` suffix identifies the server API
+generation, not the module version.
 
-Install from a clone of this repository:
+Do not run `Install-Module OnetimeSecret`, without the suffix. Gallery names are
+case-insensitive, so that command installs
+[`OneTimeSecret`](https://www.powershellgallery.com/packages/OneTimeSecret), an
+unrelated community module that predates API v2.
+
+Until the first release, install from a clone of this repository:
 
 ```powershell
 git clone https://github.com/onetimesecret/onetimesecret-powershell.git
-Import-Module ./onetimesecret-powershell/src/OnetimeSecret/OnetimeSecret.psd1
+Import-Module ./onetimesecret-powershell/src/OnetimeSecretV2/OnetimeSecretV2.psd1
 ```
 
 ## Supported PowerShell versions
@@ -147,7 +151,7 @@ though the OpenAPI document lists the endpoint without a security
 requirement. Anonymously it fails with an `AuthenticationError` (HTTP 401).
 `Get-OtsStatus` and `Get-OtsSupportedLocale` are public.
 
-Full reference: `Get-Help New-OtsSecret -Full`, `Get-Help about_OnetimeSecret`,
+Full reference: `Get-Help New-OtsSecret -Full`, `Get-Help about_OnetimeSecretV2`,
 or the generated pages under [docs/cmdlets](docs/cmdlets/).
 
 ### Vocabulary
@@ -249,15 +253,15 @@ $env:ONETIME_BASE_URL = 'https://eu.onetimesecret.com'
 Layout:
 
 ```
-src/OnetimeSecret/        the module (loaded directly during development)
+src/OnetimeSecretV2/        the module (loaded directly during development)
   Public/                 one exported cmdlet per file
   Private/                helpers: HTTP, errors, converters, connection
-  en-US/                  about_OnetimeSecret help topic
+  en-US/                  about_OnetimeSecretV2 help topic
 tests/                    Pester 5 (Module quality gates, Unit, Integration)
 examples/                 small end-to-end scripts (see Examples above)
 docs/                     releasing.md and generated cmdlet reference
 output/                   build output (gitignored)
-OnetimeSecret.build.ps1   Invoke-Build tasks; build.ps1 bootstraps and runs them
+OnetimeSecretV2.build.ps1   Invoke-Build tasks; build.ps1 bootstraps and runs them
 ```
 
 The release build concatenates `Private/` and `Public/` into a single

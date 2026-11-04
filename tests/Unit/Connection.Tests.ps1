@@ -3,8 +3,8 @@ param()
 
 BeforeAll {
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    Get-Module OnetimeSecret | Remove-Module -Force
-    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecret') 'OnetimeSecret.psd1') -Force
+    Get-Module OnetimeSecretV2 | Remove-Module -Force
+    Import-Module (Join-Path (Join-Path (Join-Path $repoRoot 'src') 'OnetimeSecretV2') 'OnetimeSecretV2.psd1') -Force
 
     $script:Token = ConvertTo-SecureString -String 'tok_test' -AsPlainText -Force
     $script:Credential = New-Object System.Management.Automation.PSCredential -ArgumentList 'ur1abc23def', $Token
@@ -72,7 +72,7 @@ Describe 'Connect-OtsAccount' {
 
     It 'sets a descriptive User-Agent' {
         $connection = Connect-OtsAccount 'https://eu.onetimesecret.com' -Anonymous -PassThru
-        $connection.UserAgent | Should -Match '^OnetimeSecret-PowerShell/\d+\.\d+\.\d+ \(PowerShell/'
+        $connection.UserAgent | Should -Match '^OnetimeSecretV2-PowerShell/\d+\.\d+\.\d+ \(PowerShell/'
     }
 }
 
@@ -112,7 +112,7 @@ Describe 'Connection resolution' {
         # Connect-OtsAccount also replaced the default; put the EU one back.
         Connect-OtsAccount 'https://eu.onetimesecret.com' -Anonymous
 
-        InModuleScope OnetimeSecret -Parameters @{ Other = $other } {
+        InModuleScope OnetimeSecretV2 -Parameters @{ Other = $other } {
             (Resolve-OtsConnection -Connection $Other).ServerUri.Host | Should -Be 'us.onetimesecret.com'
             (Resolve-OtsConnection).ServerUri.Host | Should -Be 'eu.onetimesecret.com'
         }
